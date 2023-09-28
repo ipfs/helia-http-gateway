@@ -16,8 +16,8 @@ const ROOT_FILE_PATTERNS = [
  */
 export class HeliaFetch {
     private fs: UnixFS
-    private node: Helia | undefined
     private rootFilePatterns: string[]
+    public node: Helia | undefined
     public ready: Promise<void>
 
     /**

@@ -37,10 +37,10 @@ class HeliaFetcher {
             //     path: '/ipns/:path',
             //     type: 'get',
             //     handler: this.fetchIpns.bind(this)
-            // }, {
-            //     path: '/api/v0/repo/gc',
-            //     type: 'get',
-            //     handler: this.gc.bind(this)
+            }, {
+                path: '/api/v0/repo/gc',
+                type: 'get',
+                handler: this.gc.bind(this)
             }
         ]
     }
@@ -70,15 +70,6 @@ class HeliaFetcher {
         }
     }
 
-    // async fetch (request: Express.Request, response: Express.Response): Promise<Express.Response> {
-    //     console.log(request.params.cid)
-    //     return this.callRunner(request, response, async (): Promise<void> => {
-    //         const { type } = await this.fs.stat(CID.parse(request.params.cid))
-    //         console.log(type)
-    //         for (await const chunk of this.heliaFetch.fetch())
-    //     })
-    // }
-
     // async fetchIpns (request: Express.Request, response: Express.Response): Promise<Express.Response> {
     //     return this.callRunner(request, response, async (): Promise<void> => {
     //         for await (const chunk of this.fs.cat(request.params.path)) {
@@ -87,9 +78,11 @@ class HeliaFetcher {
     //     })
     // }
 
-    // async gc (request: Express.Request, response: Express.Response): Promise<Express.Response> {
-    //     return this.callRunner(request, response, async (): Promise<void> => this.node.gc())
-    // }
+    async gc (request: Request, response: Response): Promise<void> {
+        await this.isReady
+        await this.heliaFetch.node?.gc()
+        response.status(200).end()
+    }
 }
 
 const heliaFetcher = new HeliaFetcher()
