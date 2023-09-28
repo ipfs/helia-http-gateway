@@ -19,5 +19,5 @@ heliaFetcher.routes.map(({ type, path, handler }: routeEntry) => app[type](path,
 app.get('/.+', (_req, res): Express.Response => res.send('404 Not Found'));
 
 app.listen(3000, () => {
-    console.log('Server listening on port 3000');
+    console.log('Server listening on http://localhost:3000');
 });

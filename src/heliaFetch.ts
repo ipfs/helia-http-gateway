@@ -122,7 +122,7 @@ export class HeliaFetch {
     private async getDirectoryResponse (...[cid, options]: Parameters<UnixFS["cat"]>): Promise<AsyncIterable<Uint8Array>> {
         const rootFile = await pTryEach(this.rootFilePatterns.map(file => {
             const path = options?.path ?? ''
-            return async () => {
+            return async (): Promise<{name: string, cid: CID}> => {
                 const stats = await this.fs.stat(cid, { path: `${path}/${file}` })
 
                 return {

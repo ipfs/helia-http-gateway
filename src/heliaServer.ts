@@ -1,8 +1,11 @@
+import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js';
 import { HeliaFetch } from './heliaFetch.js';
+import { Request, Response } from 'express';
+
 export interface routeEntry {
     path: string
     type: 'get' | 'post'
-    handler: (request: Express.Request, response: Express.Response) => Promise<Express.Response>
+    handler: (request: Request, response: Response) => Promise<void>
 }
 
 class HeliaFetcher {
@@ -42,22 +45,28 @@ class HeliaFetcher {
         ]
     }
 
-    private async redirectRelative (request: Express.Request, response: Express.Response): Promise<Express.Response> {
-        const referrerPath = new URL(request.headers.referer).pathname
-        return response.redirect(`${referrerPath}${request.path}`.replace(/\/\//g, '/'))
+    private async redirectRelative (request: Request, response: Response): Promise<void> {
+        const referrerPath = new URL(request.headers.referer ?? '').pathname
+        response.redirect(`${referrerPath}${request.path}`.replace(/\/\//g, '/'))
     }
 
-    private async callRunner (request: Express.Request, response: Express.Response): Promise<Express.Response> {
+    private async callRunner (request: Request, response: Response): Promise<void> {
         await this.isReady
         try {
-            response.setHeader('Content-Type', 'text/html')
+            let type = undefined
             for await (const chunk of await this.heliaFetch.fetch(request.path)) {
-                response.write(this.decoder.decode(chunk))
+                if (!type) {
+                    const { relativePath: path } = this.heliaFetch.parsePath(request.path)
+                    type = await parseContentType({ bytes: chunk, path }) as string
+                    // this needs to happen first.
+                    response.setHeader('Content-Type', type ?? DEFAULT_MIME_TYPE)
+                }
+                response.write(Buffer.from(chunk))
             }
-            return response.end()
+            response.end()
         } catch (error) {
             console.debug(error)
-            return response.status(500).end()
+            response.status(500).end()
         }
     }
 
