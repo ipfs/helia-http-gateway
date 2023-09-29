@@ -3,17 +3,22 @@ import { LRUCache } from 'lru-cache';
 import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js';
 import { HeliaFetch } from './heliaFetch.js';
 
-export interface routeEntry {
+export interface IRouteEntry {
     path: string
     type: 'get' | 'post'
     handler: (request: Request, response: Response) => Promise<void>
 }
 
-const delegatedRoutingAPI = (ipns: string) => `https://node3.delegate.ipfs.io/api/v0/name/resolve/${ipns}?r=false`
+interface IRouteHandler {
+    request: Request,
+    response: Response
+}
+
+const delegatedRoutingAPI = (ipns: string): string => `https://node3.delegate.ipfs.io/api/v0/name/resolve/${ipns}?r=false`
 
 class HeliaFetcher {
     private heliaFetch: HeliaFetch
-    public routes: routeEntry[]
+    public routes: IRouteEntry[]
     public isReady: Promise<void>
     private ipnsResolutionCache: LRUCache<string, string> = new LRUCache({
         max: 10000,
@@ -33,19 +38,19 @@ class HeliaFetcher {
             {
                 path: '/ipfs/*',
                 type: 'get',
-                handler: this.fetchIpfs.bind(this)
+                handler: (request, response): Promise<void> => this.fetchIpfs({request, response})
             }, {
                 path: '/ipns/*',
                 type: 'get',
-                handler: this.fetchIpns.bind(this)
+                handler: (request, response): Promise<void> => this.fetchIpns({request, response})
             }, {
                 path: '/api/v0/repo/gc',
                 type: 'get',
-                handler: this.gc.bind(this)
+                handler: (request, response): Promise<void> => this.gc({request, response})
             }, {
                 path: '/*',
                 type: 'get',
-                handler: this.redirectRelative.bind(this)
+                handler: (request, response): Promise<void> => this.redirectRelative({request, response})
             }
         ]
     }
@@ -56,7 +61,7 @@ class HeliaFetcher {
      * @param request
      * @param response
      */
-    private async redirectRelative (request: Request, response: Response): Promise<void> {
+    private async redirectRelative ({ request, response }: IRouteHandler): Promise<void> {
         const referrerPath = new URL(request.headers.referer ?? '').pathname
         if (referrerPath) {
             response.redirect(`${referrerPath}${request.path}`.replace(/\/\//g, '/'))
@@ -70,7 +75,13 @@ class HeliaFetcher {
      * @param response
      * @param overridePath is used for IPNS routing where override is needed.
      */
-    private async fetchIpfs (request: Request, response: Response, overridePath = ''): Promise<void> {
+    private async fetchIpfs ({
+        request,
+        response,
+        overridePath
+    }: IRouteHandler & {
+        overridePath?: string
+    }): Promise<void> {
         try {
             await this.isReady
             let type = undefined
@@ -99,7 +110,7 @@ class HeliaFetcher {
      * @param response
      * @returns
      */
-    async fetchIpns (request: Request, response: Response): Promise<void> {
+    async fetchIpns ({ request, response }: IRouteHandler): Promise<void> {
         try {
             await this.isReady
 
@@ -123,7 +134,11 @@ class HeliaFetcher {
                 const { Path } = await (await fetch(delegatedRoutingAPI(domain))).json()
                 this.ipnsResolutionCache.set(domain, Path)
             }
-            await this.fetchIpfs(request, response, `${this.ipnsResolutionCache.get(domain)}${relativePath}`)
+            await this.fetchIpfs({
+                request,
+                response,
+                overridePath: `${this.ipnsResolutionCache.get(domain)}${relativePath}`
+            })
         } catch (error) {
             console.debug(error)
             response.status(500).end()
@@ -136,7 +151,7 @@ class HeliaFetcher {
      * @param request
      * @param response
      */
-    async gc (_request: Request, response: Response): Promise<void> {
+    async gc ({ response }: IRouteHandler): Promise<void> {
         await this.isReady
         await this.heliaFetch.node?.gc()
         response.status(200).end()

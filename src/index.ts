@@ -5,6 +5,10 @@ import heliaFetcher, { routeEntry } from './heliaServer.js';
 const app = express();
 const promMetricsMiddleware = promBundle({ includeMethod: true });
 
+// Constants
+const PORT = 3000;
+const HOST = '0.0.0.0';
+
 // Add the prometheus middleware
 app.use(promMetricsMiddleware);
 
@@ -16,6 +20,6 @@ await heliaFetcher.isReady;
 
 heliaFetcher.routes.map(({ type, path, handler }: routeEntry) => app[type](path, handler))
 
-app.listen(3000, () => {
+app.listen(PORT, HOST, () => {
     console.log('Server listening on http://localhost:3000');
 });
