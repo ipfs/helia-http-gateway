@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { LRUCache } from 'lru-cache';
 import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js';
 import { HeliaFetch } from './heliaFetch.js';
 
@@ -16,20 +15,19 @@ interface IRouteHandler {
 
 const delegatedRoutingAPI = (ipns: string): string => `https://node3.delegate.ipfs.io/api/v0/name/resolve/${ipns}?r=false`
 
-class HeliaFetcher {
+class HeliaServer {
     private heliaFetch: HeliaFetch
     public routes: IRouteEntry[]
     public isReady: Promise<void>
-    private ipnsResolutionCache: LRUCache<string, string> = new LRUCache({
-        max: 10000,
-        ttl: 1000 * 60 * 60 * 24
-    })
 
     constructor () {
         this.isReady = this.init()
         this.routes = []
     }
 
+    /**
+     * Initialize the HeliaServer instance
+     */
     async init (): Promise<void> {
         this.heliaFetch = new HeliaFetch()
         await this.heliaFetch.ready
@@ -68,6 +66,33 @@ class HeliaFetcher {
         }
     }
 
+
+    /**
+     * Fetches from helia and writes the chunks to the response.
+     * 
+     * @param param0
+     */
+    private async fetchFromHeliaAndWriteToResponse ({
+        response,
+        routePath
+    }: IRouteHandler & {
+        routePath: string
+    }): Promise<void> {
+        await this.isReady
+        let type: string | undefined = undefined
+        for await (const chunk of await this.heliaFetch.fetch(routePath)) {
+            if (!type) {
+                const { relativePath: path } = this.heliaFetch.parsePath(routePath)
+                type = await parseContentType({ bytes: chunk, path }) as string
+                // this needs to happen first.
+                response.setHeader('Content-Type', type ?? DEFAULT_MIME_TYPE)
+                response.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+            }
+            response.write(Buffer.from(chunk))
+        }
+        response.end()
+    }
+
     /**
      * Fetches a path from IPFS
      *
@@ -77,26 +102,10 @@ class HeliaFetcher {
      */
     private async fetchIpfs ({
         request,
-        response,
-        overridePath
-    }: IRouteHandler & {
-        overridePath?: string
-    }): Promise<void> {
+        response
+    }: IRouteHandler): Promise<void> {
         try {
-            await this.isReady
-            let type = undefined
-            const routePath = overridePath ?? request.path
-            for await (const chunk of await this.heliaFetch.fetch(routePath)) {
-                if (!type) {
-                    const { relativePath: path } = this.heliaFetch.parsePath(routePath)
-                    type = await parseContentType({ bytes: chunk, path }) as string
-                    // this needs to happen first.
-                    response.setHeader('Content-Type', type ?? DEFAULT_MIME_TYPE)
-                    response.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
-                }
-                response.write(Buffer.from(chunk))
-            }
-            response.end()
+            this.fetchFromHeliaAndWriteToResponse({response, request, routePath: request.path})
         } catch (error) {
             console.debug(error)
             response.status(500).end()
@@ -130,15 +139,7 @@ class HeliaFetcher {
                 }
             }
 
-            if (!this.ipnsResolutionCache.has(domain)) {
-                const { Path } = await (await fetch(delegatedRoutingAPI(domain))).json()
-                this.ipnsResolutionCache.set(domain, Path)
-            }
-            await this.fetchIpfs({
-                request,
-                response,
-                overridePath: `${this.ipnsResolutionCache.get(domain)}${relativePath}`
-            })
+            await this.fetchFromHeliaAndWriteToResponse({response, request, routePath: request.path})
         } catch (error) {
             console.debug(error)
             response.status(500).end()
@@ -158,5 +159,5 @@ class HeliaFetcher {
     }
 }
 
-const heliaFetcher = new HeliaFetcher()
-export default heliaFetcher
+const heliaServer = new HeliaServer()
+export default heliaServer

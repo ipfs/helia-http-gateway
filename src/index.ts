@@ -1,6 +1,6 @@
 import express from 'express';
 import promBundle from 'express-prom-bundle';
-import heliaFetcher, { routeEntry } from './heliaServer.js';
+import heliaFetcher, { IRouteEntry } from './heliaServer.js';
 
 const app = express();
 const promMetricsMiddleware = promBundle({ includeMethod: true });
@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
 
 await heliaFetcher.isReady;
 
-heliaFetcher.routes.map(({ type, path, handler }: routeEntry) => app[type](path, handler))
+heliaFetcher.routes.map(({ type, path, handler }: IRouteEntry) => app[type](path, handler))
 
 app.listen(PORT, HOST, () => {
     console.log('Server listening on http://localhost:3000');
