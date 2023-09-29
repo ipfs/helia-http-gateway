@@ -50,6 +50,12 @@ class HeliaFetcher {
         ]
     }
 
+    /**
+     * Handles redirecting to the relative path
+     *
+     * @param request
+     * @param response
+     */
     private async redirectRelative (request: Request, response: Response): Promise<void> {
         const referrerPath = new URL(request.headers.referer ?? '').pathname
         if (referrerPath) {
@@ -57,6 +63,13 @@ class HeliaFetcher {
         }
     }
 
+    /**
+     * Fetches a path from IPFS
+     *
+     * @param request
+     * @param response
+     * @param overridePath is used for IPNS routing where override is needed.
+     */
     private async fetchIpfs (request: Request, response: Response, overridePath = ''): Promise<void> {
         try {
             await this.isReady
@@ -79,6 +92,13 @@ class HeliaFetcher {
         }
     }
 
+    /**
+     * Fetches a path from IPNS, which basically queries delegated routing API and then fetches the path from IPFS.
+     *
+     * @param request
+     * @param response
+     * @returns
+     */
     async fetchIpns (request: Request, response: Response): Promise<void> {
         try {
             await this.isReady
@@ -110,7 +130,13 @@ class HeliaFetcher {
         }
     }
 
-    async gc (request: Request, response: Response): Promise<void> {
+    /**
+     * GC the node
+     *
+     * @param request
+     * @param response
+     */
+    async gc (_request: Request, response: Response): Promise<void> {
         await this.isReady
         await this.heliaFetch.node?.gc()
         response.status(200).end()
