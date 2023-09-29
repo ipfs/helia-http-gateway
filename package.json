@@ -42,6 +42,7 @@
     "express-prom-bundle": "6.6.0",
     "file-type": "18.5.0",
     "helia": "2.x",
+    "lru-cache": "10.0.1",
     "mime-types": "2.1.35",
     "p-try-each": "1.0.1"
   }

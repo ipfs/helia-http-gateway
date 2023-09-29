@@ -49,7 +49,7 @@ export class HeliaFetch {
         if (!Boolean(path)) {
             throw new Error('Path is empty')
         }
-        const regex = /^\/(?<namespace>ipfs|ipns)\/(?<address>[^/$]+)(?<relativePath>[^$]*)/
+        const regex = /^\/(?<namespace>ip[fn]s)\/(?<address>[^/$]+)(?<relativePath>[^$]*)/
         const result = path.match(regex)
         if (!result) {
             throw new Error('Path is not valid, provide path as /ipfs/<cid> or /ipns/<path>')
