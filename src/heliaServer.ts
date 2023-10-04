@@ -18,6 +18,7 @@ interface IRouteHandler {
 
 class HeliaServer {
   private heliaFetch!: HeliaFetch
+  private heliaVersionInfo!: {Version: string, Commit: string}
   public routes: IRouteEntry[]
   public isReady: Promise<void>
 
@@ -145,16 +146,20 @@ class HeliaServer {
     await this.isReady
 
     try {
-      const { default: packageJson } = await import('../../node_modules/helia/package.json', {
-        assert: { type: 'json' }
-      })
-      const { version: heliaVersionString } = packageJson
+      if (this.heliaVersionInfo === undefined) {
+        const { default: packageJson } = await import('../../node_modules/helia/package.json', {
+          assert: { type: 'json' }
+        })
+        const { version: heliaVersionString } = packageJson
 
-      const ghResp = await (await fetch(HELIA_RELEASE_INFO_API(heliaVersionString))).json()
-      response.json({
-        Version: heliaVersionString,
-        Commit: ghResp.object.sha.slice(0, 7)
-      })
+        const ghResp = await (await fetch(HELIA_RELEASE_INFO_API(heliaVersionString))).json()
+        this.heliaVersionInfo = {
+          Version: heliaVersionString,
+          Commit: ghResp.object.sha.slice(0, 7)
+        }
+      }
+
+      response.json(this.heliaVersionInfo)
     } catch (error) {
       response.status(500).end()
     }
