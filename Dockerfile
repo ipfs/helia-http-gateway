@@ -1,11 +1,12 @@
-FROM node:20-slim
+FROM node:20-alpine
 
-RUN apt-get update
-RUN apt-get install -y build-essential cmake git libssl-dev
+RUN apk update
+RUN apk add build-base cmake git libressl-dev
 
-COPY package*.json .
-RUN npm ci --quiet
+WORKDIR /app
+
 COPY . .
+RUN npm install
 RUN npm run build
 EXPOSE 8080
 CMD [ "npm", "start" ]
