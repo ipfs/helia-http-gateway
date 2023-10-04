@@ -10,11 +10,15 @@ type testOutput = Promise<string | undefined>
 
 export const DEFAULT_MIME_TYPE = 'text/html'
 
+/**
+ * Tests to determine the content type of the input.
+ * The order is important on this one.
+ */
 const tests: Array<(input: testInput) => testOutput> = [
   // testing file-type from buffer
   async ({ bytes }): testOutput => (await fileTypeFromBuffer(bytes))?.mime,
   // testing file-type from path
-  // ts-expect-error
+  // ts-expect-error because the type definitions are misleading
   async ({ path }): testOutput => mime.lookup(path) || undefined,
   // svg
   async ({ bytes }): testOutput => new TextDecoder().decode(bytes.slice(0, 4)) === '<svg' ? 'image/svg+xml' : undefined,
@@ -26,10 +30,22 @@ const overrides: Record<string, string> = {
   'video/quicktime': 'video/mp4'
 }
 
+/**
+ * Override the content type based on overrides.
+ */
+function overrideContentType (type: string): string {
+  return overrides[type] ?? type
+}
+
+/**
+ * Parse the content type from the input based on the tests.
+ */
 export async function parseContentType (input: testInput): Promise<string> {
-  let type = (await Promise.all(tests.map(async test => test(input)))).filter(Boolean)[0] as string
-  if (type in overrides) {
-    type = overrides[type]
+  for (const test of tests) {
+    const type = await test(input)
+    if (type !== undefined) {
+      return overrideContentType(type)
+    }
   }
-  return type
+  return DEFAULT_MIME_TYPE
 }
