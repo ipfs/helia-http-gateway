@@ -18,9 +18,9 @@ interface IRouteHandler {
 
 class HeliaServer {
   private heliaFetch!: HeliaFetch
-  private heliaVersionInfo!: {Version: string, Commit: string}
-  public routes: IRouteEntry[]
+  private heliaVersionInfo!: { Version: string, Commit: string }
   public isReady: Promise<void>
+  public routes: IRouteEntry[]
 
   constructor () {
     this.isReady = this.init()
@@ -66,7 +66,13 @@ class HeliaServer {
   private async redirectRelative ({ request, response }: IRouteHandler): Promise<void> {
     const referrerPath = new URL(request.headers.referer ?? '').pathname
     if (referrerPath !== undefined) {
-      response.redirect(`${referrerPath}${request.path}`.replace(/\/\//g, '/'))
+      let relativeRedirectPath = `${referrerPath}${request.path}`
+      const { namespace, address } = this.heliaFetch.parsePath(referrerPath)
+      if (namespace === 'ipns') {
+        relativeRedirectPath = `/${namespace}/${address}${request.path}`
+      }
+      // absolute redirect
+      response.redirect(301, relativeRedirectPath)
     }
   }
 
@@ -117,17 +123,22 @@ class HeliaServer {
       await this.isReady
 
       const {
+        namespace: reqNamespace,
         relativePath,
-        address: domain
+        address: reqDomain
       } = this.heliaFetch.parsePath(request.path)
 
       if (request.headers.referer !== undefined) {
         const refererPath = new URL(request.headers.referer).pathname
-        if (!request.originalUrl.startsWith(refererPath)) {
-          const { namespace } = this.heliaFetch.parsePath(refererPath)
-          if (namespace === 'ipns') {
-            const finalUrl = `${request.headers.referer}/${domain}/${relativePath}`.replace(/([^:]\/)\/+/g, '$1')
-            response.redirect(finalUrl); return
+        const {
+          namespace: refNamespace,
+          address: refDomain
+        } = this.heliaFetch.parsePath(refererPath)
+        if (reqNamespace !== refNamespace || reqDomain !== refDomain) {
+          if (!request.originalUrl.startsWith(refererPath) && refNamespace === 'ipns') {
+            const finalUrl = `${request.headers.referer}/${reqDomain}/${relativePath}`.replace(/([^:]\/)\/+/g, '$1')
+            response.redirect(finalUrl)
+            return
           }
         }
       }

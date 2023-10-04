@@ -130,12 +130,15 @@ export class HeliaFetch {
     const rootFile = await pTryEach(this.rootFilePatterns.map(file => {
       const directoryPath = options?.path ?? ''
       return async (): Promise<{ name: string, cid: CID }> => {
-        const path = `${directoryPath}/${file}`.replace(/\/\//g, '/')
-        const stats = await this.fs.stat(cid, { path })
-
-        return {
-          name: file,
-          cid: stats.cid
+        try {
+          const path = `${directoryPath}/${file}`.replace(/\/\//g, '/')
+          const stats = await this.fs.stat(cid, { path })
+          return {
+            name: file,
+            cid: stats.cid
+          }
+        } catch (error) {
+          return Promise.reject(error)
         }
       }
     }))
