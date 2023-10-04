@@ -18,12 +18,6 @@ Pass the explicit platform when building on a Mac.
 $ docker build . --tag helia --platform linux/arm64
 ```
 
-Building with custom CMAKE flags.
-
-```sh
-$ docker build . --tag helia --build-arg CMAKE_CXX_FLAGS="..." --build-arg CMAKE_C_FLAGS="..."
-```
-
 ## Running
 
 ```sh

@@ -1,11 +1,7 @@
-FROM node:20-alpine
+FROM node:20-slim
 
-RUN apk update
-RUN apk add build-base cmake git libressl-dev
-ARG CMAKE_CXX_FLAGS
-ARG CMAKE_C_FLAGS
-ENV CMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -fPIC"
-ENV CMAKE_C_FLAGS="${CMAKE_C_FLAGS} -fPIC"
+RUN apt-get update
+RUN apt-get install -y build-essential cmake git libssl-dev
 
 WORKDIR /app
 
