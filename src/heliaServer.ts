@@ -3,6 +3,8 @@ import { type Request, type Response } from 'express'
 import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
 import { HeliaFetch } from './heliaFetch.js'
 
+const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.com/repos/ipfs/helia/git/ref/tags/helia-v${version}`
+
 export interface IRouteEntry {
   path: string
   type: 'get' | 'post'
@@ -42,8 +44,12 @@ class HeliaServer {
         type: 'get',
         handler: async (request, response): Promise<void> => this.fetchIpns({ request, response })
       }, {
-        path: '/api/v0/repo/gc',
+        path: '/api/v0/version',
         type: 'get',
+        handler: async (request, response): Promise<void> => this.heliaVersion({ request, response })
+      }, {
+        path: '/api/v0/repo/gc',
+        type: 'post',
         handler: async (request, response): Promise<void> => this.gc({ request, response })
       }, {
         path: '/*',
@@ -128,6 +134,28 @@ class HeliaServer {
       await this.fetchFromHeliaAndWriteToResponse({ response, request, routePath: request.path })
     } catch (error) {
       console.debug(error)
+      response.status(500).end()
+    }
+  }
+
+  /**
+   * Get the helia version
+   */
+  async heliaVersion ({ response }: IRouteHandler): Promise<void> {
+    await this.isReady
+
+    try {
+      const { default: packageJson } = await import('../../node_modules/helia/package.json', {
+        assert: { type: 'json' }
+      })
+      const { version: heliaVersionString } = packageJson
+
+      const ghResp = await (await fetch(HELIA_RELEASE_INFO_API(heliaVersionString))).json()
+      response.json({
+        Version: heliaVersionString,
+        Commit: ghResp.object.sha.slice(0, 7)
+      })
+    } catch (error) {
       response.status(500).end()
     }
   }
