@@ -113,7 +113,8 @@ export class HeliaFetch {
       const { Path } = await (await fetch(this.delegatedRoutingApi + address)).json()
       this.ipnsResolutionCache.set(address, Path)
     }
-    return this.fetch(`${this.ipnsResolutionCache.get(address)}${options?.path ?? ''}`)
+    const finalPath = `${this.ipnsResolutionCache.get(address)}${options?.path ?? ''}`
+    return this.fetch(finalPath)
   }
 
   /**
