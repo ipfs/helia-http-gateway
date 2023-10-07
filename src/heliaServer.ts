@@ -1,7 +1,7 @@
-/* eslint-disable no-console */
 import { type Request, type Response } from 'express'
 import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
 import { HeliaFetch } from './heliaFetch.js'
+import type debug from 'debug'
 
 const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.com/repos/ipfs/helia/git/ref/tags/helia-v${version}`
 
@@ -16,22 +16,25 @@ interface IRouteHandler {
   response: Response
 }
 
-class HeliaServer {
+export class HeliaServer {
   private heliaFetch!: HeliaFetch
   private heliaVersionInfo!: { Version: string, Commit: string }
+  private readonly log: debug.Debugger
   public isReady: Promise<void>
   public routes: IRouteEntry[]
 
-  constructor () {
+  constructor (logger: debug.Debugger) {
+    this.log = logger.extend('express')
     this.isReady = this.init()
     this.routes = []
+    this.log('Initialized')
   }
 
   /**
    * Initialize the HeliaServer instance
    */
   async init (): Promise<void> {
-    this.heliaFetch = new HeliaFetch()
+    this.heliaFetch = new HeliaFetch({ logger: this.log })
     await this.heliaFetch.ready
     // eslint-disable-next-line no-console
     console.log('Helia Started!')
@@ -66,6 +69,7 @@ class HeliaServer {
   private async redirectRelative ({ request, response }: IRouteHandler): Promise<void> {
     const referrerPath = new URL(request.headers.referer ?? '').pathname
     if (referrerPath !== undefined) {
+      this.log('Redirecting to relative path:', referrerPath)
       let relativeRedirectPath = `${referrerPath}${request.path}`
       const { namespace, address } = this.heliaFetch.parsePath(referrerPath)
       if (namespace === 'ipns') {
@@ -87,6 +91,7 @@ class HeliaServer {
   }): Promise<void> {
     await this.isReady
     let type: string | undefined
+    this.log('Fetching from Helia:', routePath)
     for await (const chunk of await this.heliaFetch.fetch(routePath)) {
       if (type === undefined) {
         const { relativePath: path } = this.heliaFetch.parsePath(routePath)
@@ -108,9 +113,10 @@ class HeliaServer {
     response
   }: IRouteHandler): Promise<void> {
     try {
+      this.log('Fetching from IPFS:', request.path)
       await this.fetchFromHeliaAndWriteToResponse({ response, request, routePath: request.path })
     } catch (error) {
-      console.debug(error)
+      this.log('Error fetching from IPFS:', error)
       response.status(500).end()
     }
   }
@@ -129,6 +135,7 @@ class HeliaServer {
       } = this.heliaFetch.parsePath(request.path)
 
       if (request.headers.referer !== undefined) {
+        this.log('Referer found:', request.headers.referer)
         const refererPath = new URL(request.headers.referer).pathname
         const {
           namespace: refNamespace,
@@ -137,15 +144,17 @@ class HeliaServer {
         if (reqNamespace !== refNamespace || reqDomain !== refDomain) {
           if (!request.originalUrl.startsWith(refererPath) && refNamespace === 'ipns') {
             const finalUrl = `${request.headers.referer}/${reqDomain}/${relativePath}`.replace(/([^:]\/)\/+/g, '$1')
-            response.redirect(finalUrl)
+            this.log('Redirecting to final URL:', finalUrl)
+            response.redirect(301, finalUrl)
             return
           }
         }
       }
 
+      this.log('Requesting content from IPNS:', request.path)
       await this.fetchFromHeliaAndWriteToResponse({ response, request, routePath: request.path })
     } catch (error) {
-      console.debug(error)
+      this.log('Error requesting content from IPNS:', error)
       response.status(500).end()
     }
   }
@@ -158,6 +167,7 @@ class HeliaServer {
 
     try {
       if (this.heliaVersionInfo === undefined) {
+        this.log('Fetching Helia version info')
         const { default: packageJson } = await import('../../node_modules/helia/package.json', {
           assert: { type: 'json' }
         })
@@ -170,6 +180,7 @@ class HeliaServer {
         }
       }
 
+      this.log('Helia version info:', this.heliaVersionInfo)
       response.json(this.heliaVersionInfo)
     } catch (error) {
       response.status(500).end()
@@ -181,10 +192,8 @@ class HeliaServer {
    */
   async gc ({ response }: IRouteHandler): Promise<void> {
     await this.isReady
+    this.log('GCing node')
     await this.heliaFetch.node?.gc()
     response.status(200).end()
   }
 }
-
-const heliaServer = new HeliaServer()
-export default heliaServer
