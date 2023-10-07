@@ -67,16 +67,22 @@ export class HeliaServer {
    * Handles redirecting to the relative path
    */
   private async redirectRelative ({ request, response }: IRouteHandler): Promise<void> {
+    this.log('Redirecting to relative path:', request.path, request.headers)
     const referrerPath = new URL(request.headers.referer ?? '').pathname
     if (referrerPath !== undefined) {
-      this.log('Redirecting to relative path:', referrerPath)
-      let relativeRedirectPath = `${referrerPath}${request.path}`
-      const { namespace, address } = this.heliaFetch.parsePath(referrerPath)
-      if (namespace === 'ipns') {
-        relativeRedirectPath = `/${namespace}/${address}${request.path}`
+      try {
+        let relativeRedirectPath = `${referrerPath}${request.path}`
+        const { namespace, address } = this.heliaFetch.parsePath(referrerPath)
+        if (namespace === 'ipns') {
+          relativeRedirectPath = `/${namespace}/${address}${request.path}`
+        }
+        // absolute redirect
+        this.log('Redirecting to relative path:', referrerPath)
+        response.redirect(301, relativeRedirectPath)
+      } catch (error) {
+        this.log('Error redirecting to relative path:', error)
+        response.status(500).end()
       }
-      // absolute redirect
-      response.redirect(301, relativeRedirectPath)
     }
   }
 
@@ -127,6 +133,7 @@ export class HeliaServer {
   async fetchIpns ({ request, response }: IRouteHandler): Promise<void> {
     try {
       await this.isReady
+      this.log('Requesting content from IPNS:', request.path)
 
       const {
         namespace: reqNamespace,

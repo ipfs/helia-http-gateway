@@ -93,6 +93,7 @@ export class HeliaFetch {
   public async fetch (path: string): Promise<AsyncIterable<Uint8Array>> {
     try {
       await this.ready
+      this.log('Fetching:', path)
       const { namespace, address, relativePath } = this.parsePath(path)
       this.log('Processing Fetch:', { namespace, address, relativePath })
       switch (namespace) {
@@ -131,12 +132,13 @@ export class HeliaFetch {
    * Fetch IPNS content.
    */
   private async fetchIpns (address: string, options?: Parameters<UnixFS['cat']>[1]): Promise<AsyncIterable<Uint8Array>> {
-    this.log('Fetching from Delegate Routing:', address)
     if (!this.ipnsResolutionCache.has(address)) {
+      this.log('Fetching from Delegate Routing:', address)
       const { Path } = await (await fetch(this.delegatedRoutingApi + address)).json()
       this.ipnsResolutionCache.set(address, Path ?? 'not-found')
     }
     if (this.ipnsResolutionCache.get(address) === 'not-found') {
+      this.log('No Path found:', address)
       throw new Error(`Could not resolve IPNS address: ${address}`)
     }
     const finalPath = `${this.ipnsResolutionCache.get(address)}${options?.path ?? ''}`
