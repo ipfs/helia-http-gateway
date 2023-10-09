@@ -8,8 +8,8 @@ const app = express()
 const promMetricsMiddleware = promBundle({ includeMethod: true })
 
 // Constants
-const PORT = 8080
-const HOST = 'localhost'
+const PORT = (process?.env?.PORT ?? 8080) as number
+const HOST = process?.env?.HOST ?? '0.0.0.0'
 
 // Add the prometheus middleware
 app.use(promMetricsMiddleware)
