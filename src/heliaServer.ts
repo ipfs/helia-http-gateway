@@ -40,13 +40,9 @@ export class HeliaServer {
     console.log('Helia Started!')
     this.routes = [
       {
-        path: '/ipfs/*',
+        path: '/:ns(ipfs|ipns)/*',
         type: 'get',
-        handler: async (request, response): Promise<void> => this.fetchIpfs({ request, response })
-      }, {
-        path: '/ipns/*',
-        type: 'get',
-        handler: async (request, response): Promise<void> => this.fetchIpns({ request, response })
+        handler: async (request, response): Promise<void> => this.fetch({ request, response })
       }, {
         path: '/api/v0/version',
         type: 'get',
@@ -112,56 +108,46 @@ export class HeliaServer {
   }
 
   /**
-   * Fetches a path from IPFS
+   * Checks if the request requires additional redirection.
    */
-  private async fetchIpfs ({
-    request,
-    response
-  }: IRouteHandler): Promise<void> {
-    try {
-      this.log('Fetching from IPFS:', request.path)
-      await this.fetchFromHeliaAndWriteToResponse({ response, request, routePath: request.path })
-    } catch (error) {
-      this.log('Error fetching from IPFS:', error)
-      response.status(500).end()
+  async requiresAdditionalRedirection ({ request, response }: IRouteHandler): Promise<void> {
+    const {
+      namespace: reqNamespace,
+      relativePath,
+      address: reqDomain
+    } = this.heliaFetch.parsePath(request.path)
+
+    if (request.headers.referer !== undefined) {
+      this.log('Referer found:', request.headers.referer)
+      const refererPath = new URL(request.headers.referer).pathname
+      const {
+        namespace: refNamespace,
+        address: refDomain
+      } = this.heliaFetch.parsePath(refererPath)
+
+      if (reqNamespace !== refNamespace || reqDomain !== refDomain) {
+        if (!request.originalUrl.startsWith(refererPath) &&
+          (refNamespace === 'ipns' || refNamespace === 'ipfs')
+        ) {
+          const finalUrl = `${request.headers.referer}/${reqDomain}/${relativePath}`.replace(/([^:]\/)\/+/g, '$1')
+          this.log('Redirecting to final URL:', finalUrl)
+          response.redirect(301, finalUrl)
+        }
+      }
     }
   }
 
   /**
-   * Fetches a path from IPNS, which basically queries delegated routing API and then fetches the path from IPFS.
+   * Fetches a path, which basically queries delegated routing API and then fetches the path from helia.
    */
-  async fetchIpns ({ request, response }: IRouteHandler): Promise<void> {
+  async fetch ({ request, response }: IRouteHandler): Promise<void> {
     try {
       await this.isReady
-      this.log('Requesting content from IPNS:', request.path)
-
-      const {
-        namespace: reqNamespace,
-        relativePath,
-        address: reqDomain
-      } = this.heliaFetch.parsePath(request.path)
-
-      if (request.headers.referer !== undefined) {
-        this.log('Referer found:', request.headers.referer)
-        const refererPath = new URL(request.headers.referer).pathname
-        const {
-          namespace: refNamespace,
-          address: refDomain
-        } = this.heliaFetch.parsePath(refererPath)
-        if (reqNamespace !== refNamespace || reqDomain !== refDomain) {
-          if (!request.originalUrl.startsWith(refererPath) && refNamespace === 'ipns') {
-            const finalUrl = `${request.headers.referer}/${reqDomain}/${relativePath}`.replace(/([^:]\/)\/+/g, '$1')
-            this.log('Redirecting to final URL:', finalUrl)
-            response.redirect(301, finalUrl)
-            return
-          }
-        }
-      }
-
-      this.log('Requesting content from IPNS:', request.path)
+      await this.requiresAdditionalRedirection({ request, response })
+      this.log('Requesting content from helia:', request.path)
       await this.fetchFromHeliaAndWriteToResponse({ response, request, routePath: request.path })
     } catch (error) {
-      this.log('Error requesting content from IPNS:', error)
+      this.log('Error requesting content from helia:', error)
       response.status(500).end()
     }
   }
