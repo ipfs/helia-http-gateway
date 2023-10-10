@@ -6,7 +6,6 @@ RUN apt-get install -y build-essential cmake git libssl-dev
 WORKDIR /app
 
 COPY . .
-RUN npm install
+RUN npm ci --quiet
 RUN npm run build
-EXPOSE 8080
 CMD [ "npm", "start" ]
