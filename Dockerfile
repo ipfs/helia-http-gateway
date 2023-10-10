@@ -1,7 +1,7 @@
-FROM node:20-alpine
+FROM node:20-slim
 
-RUN apk update
-RUN apk add build-base cmake git libressl-dev
+RUN apt-get update
+RUN apt-get install -y build-essential cmake git libssl-dev
 
 WORKDIR /app
 
