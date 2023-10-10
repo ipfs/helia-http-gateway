@@ -63,41 +63,37 @@ export class HeliaServer {
    * Handles redirecting to the relative path
    */
   private async redirectRelative ({ request, response }: IRouteHandler): Promise<void> {
-    this.log('Redirecting to relative path:', request.path, request.headers)
-    const referrerPath = new URL(request.headers.referer ?? '').pathname
-    if (referrerPath !== undefined) {
-      try {
+    try {
+      const referrerPath = new URL(request.headers.referer ?? '').pathname
+      if (referrerPath !== undefined) {
+        this.log('Referer found:', referrerPath)
         let relativeRedirectPath = `${referrerPath}${request.path}`
         const { namespace, address } = this.heliaFetch.parsePath(referrerPath)
         if (namespace === 'ipns') {
           relativeRedirectPath = `/${namespace}/${address}${request.path}`
         }
         // absolute redirect
-        this.log('Redirecting to relative path:', referrerPath)
+        this.log('Redirecting to relative to referer:', referrerPath)
         response.redirect(301, relativeRedirectPath)
-      } catch (error) {
-        this.log('Error redirecting to relative path:', error)
-        response.status(500).end()
       }
+    } catch (error) {
+      this.log('Error redirecting to relative path:', error)
+      response.status(500).end()
     }
   }
 
   /**
    * Fetches from helia and writes the chunks to the response.
    */
-  private async fetchFromHeliaAndWriteToResponse ({
-    response,
-    routePath
-  }: IRouteHandler & {
-    routePath: string
-  }): Promise<void> {
+  private async fetchFromHeliaAndWriteToResponse ({ request, response }: IRouteHandler): Promise<void> {
     await this.isReady
     let type: string | undefined
-    this.log('Fetching from Helia:', routePath)
-    for await (const chunk of await this.heliaFetch.fetch(routePath)) {
+    const { path } = request
+    this.log('Fetching from Helia:', path)
+    for await (const chunk of await this.heliaFetch.fetch(path)) {
       if (type === undefined) {
-        const { relativePath: path } = this.heliaFetch.parsePath(routePath)
-        type = await parseContentType({ bytes: chunk, path })
+        const { relativePath } = this.heliaFetch.parsePath(path)
+        type = await parseContentType({ bytes: chunk, path: relativePath })
         // this needs to happen first.
         response.setHeader('Content-Type', type ?? DEFAULT_MIME_TYPE)
         response.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
@@ -145,7 +141,7 @@ export class HeliaServer {
       await this.isReady
       await this.requiresAdditionalRedirection({ request, response })
       this.log('Requesting content from helia:', request.path)
-      await this.fetchFromHeliaAndWriteToResponse({ response, request, routePath: request.path })
+      await this.fetchFromHeliaAndWriteToResponse({ response, request })
     } catch (error) {
       this.log('Error requesting content from helia:', error)
       response.status(500).end()
