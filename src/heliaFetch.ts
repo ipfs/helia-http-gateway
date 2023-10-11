@@ -70,7 +70,7 @@ export class HeliaFetch {
           peerId: this.node.libp2p.peerId,
           services: {
             // mismatch types
-            pubsub: this.node.libp2p.services.pubsub
+            pubsub: this.node.libp2p.services.pubsub as Parameters<typeof pubsub>[0]['libp2p']['services']['pubsub']
           }
         }
       })
