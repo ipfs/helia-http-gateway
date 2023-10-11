@@ -45,6 +45,7 @@
     "typescript": "5.x"
   },
   "dependencies": {
+    "@helia/ipns": "2.0.1",
     "@helia/unixfs": "1.x",
     "express": "4.x",
     "express-prom-bundle": "6.x",

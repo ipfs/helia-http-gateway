@@ -1,3 +1,5 @@
+import { ipns } from '@helia/ipns'
+import { dht, pubsub } from '@helia/ipns/routing'
 import { unixfs, type UnixFS } from '@helia/unixfs'
 import { MemoryBlockstore } from 'blockstore-core'
 import { MemoryDatastore } from 'datastore-core'
@@ -13,18 +15,16 @@ const ROOT_FILE_PATTERNS = [
   'index.shtml'
 ]
 
-const DELEGATED_ROUTING_API = 'https://node3.delegate.ipfs.io/api/v0/name/resolve/'
-
 /**
  * Fetches files from IPFS or IPNS
  */
 export class HeliaFetch {
   private fs!: UnixFS
-  private readonly delegatedRoutingApi: string
   private readonly log: debug.Debugger
   private readonly rootFilePatterns: string[]
   public node!: Helia
   public ready: Promise<void>
+  private ipns!: ReturnType<typeof ipns>
   private readonly ipnsResolutionCache = new LRUCache<string, string>({
     max: 10000,
     ttl: 1000 * 60 * 60 * 24
@@ -33,12 +33,10 @@ export class HeliaFetch {
   constructor ({
     node,
     rootFilePatterns = ROOT_FILE_PATTERNS,
-    delegatedRoutingApi = DELEGATED_ROUTING_API,
     logger
   }: {
     node?: Helia
     rootFilePatterns?: string[]
-    delegatedRoutingApi?: string
     logger?: debug.Debugger
   } = {}) {
     // setup a logger
@@ -52,7 +50,6 @@ export class HeliaFetch {
       this.node = node
     }
     this.rootFilePatterns = rootFilePatterns
-    this.delegatedRoutingApi = delegatedRoutingApi
     this.ready = this.init()
     this.log('Initialized')
   }
@@ -65,6 +62,19 @@ export class HeliaFetch {
       blockstore: new MemoryBlockstore(),
       datastore: new MemoryDatastore()
     })
+    this.ipns = ipns(this.node, [
+      dht(this.node),
+      pubsub({
+        datastore: this.node.datastore,
+        libp2p: {
+          peerId: this.node.libp2p.peerId,
+          services: {
+            // mismatch types
+            pubsub: this.node.libp2p.services.pubsub
+          }
+        }
+      })
+    ])
     this.fs = unixfs(this.node)
     this.log('Helia Setup Complete!')
   }
@@ -134,8 +144,8 @@ export class HeliaFetch {
   private async fetchIpns (address: string, options?: Parameters<UnixFS['cat']>[1]): Promise<AsyncIterable<Uint8Array>> {
     if (!this.ipnsResolutionCache.has(address)) {
       this.log('Fetching from Delegate Routing:', address)
-      const { Path } = await (await fetch(this.delegatedRoutingApi + address)).json()
-      this.ipnsResolutionCache.set(address, Path ?? 'not-found')
+      const cid = await this.ipns.resolveDns(address)
+      this.ipnsResolutionCache.set(address, cid.toString() ?? 'not-found')
     }
     if (this.ipnsResolutionCache.get(address) === 'not-found') {
       this.log('No Path found:', address)
