@@ -27,8 +27,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          provenance: false
-          platforms: linux/amd64,linux/arm/v8,linux/arm64
+          platforms: linux/amd64,linux/arm64
 
       - name: Docker meta
         id: meta
@@ -41,6 +40,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          provenance: false
           push: ${{ github.event_name == 'push' || github.event.inputs.push == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
