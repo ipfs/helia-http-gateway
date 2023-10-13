@@ -27,6 +27,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
+          provenance: false
           platforms: linux/amd64,linux/arm/v8,linux/arm64
 
       - name: Docker meta
