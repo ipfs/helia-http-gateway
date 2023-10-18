@@ -74,7 +74,7 @@ export class HeliaServer {
         }
         // absolute redirect
         this.log('Redirecting to relative to referer:', referrerPath)
-        response.redirect(301, relativeRedirectPath)
+        response.redirect(relativeRedirectPath)
       }
     } catch (error) {
       this.log('Error redirecting to relative path:', error)
@@ -125,9 +125,9 @@ export class HeliaServer {
         if (!request.originalUrl.startsWith(refererPath) &&
           (refNamespace === 'ipns' || refNamespace === 'ipfs')
         ) {
-          const finalUrl = `${request.headers.referer}/${reqDomain}/${relativePath}`.replace(/([^:]\/)\/+/g, '$1')
+          const finalUrl = this.heliaFetch.sanitizeUrlPath(`${request.headers.referer}/${reqDomain}/${relativePath}`)
           this.log('Redirecting to final URL:', finalUrl)
-          response.redirect(301, finalUrl)
+          response.redirect(finalUrl)
         }
       }
     }
