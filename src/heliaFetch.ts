@@ -88,6 +88,13 @@ export class HeliaFetch {
   }
 
   /**
+   * Remove duplicate slashes and trailing slashes from a path.
+   */
+  public sanitizeUrlPath (path: string): string {
+    return path.replace(/([^:]\/)\/+/g, '$1').replace(/\/$/, '')
+  }
+
+  /**
    * fetch a path from IPFS or IPNS
    */
   public async fetch (path: string): Promise<AsyncIterable<Uint8Array>> {
@@ -163,7 +170,7 @@ export class HeliaFetch {
       const directoryPath = options?.path ?? ''
       return async (): Promise<{ name: string, cid: CID }> => {
         try {
-          const path = `${directoryPath}/${file}`.replace(/\/\//g, '/')
+          const path = this.sanitizeUrlPath(`${directoryPath}/${file}`)
           this.log('Trying to get root file:', { file, directoryPath })
           const stats = await this.fs.stat(cid, { path })
           this.log('Got root file:', { file, directoryPath, stats })
