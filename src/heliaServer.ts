@@ -106,7 +106,7 @@ export class HeliaServer {
   /**
    * Checks if the request requires additional redirection.
    */
-  async requiresAdditionalRedirection ({ request, response }: IRouteHandler): Promise<void> {
+  async requiresAdditionalRedirection ({ request, response }: IRouteHandler): Promise<boolean> {
     const {
       namespace: reqNamespace,
       relativePath,
@@ -128,9 +128,11 @@ export class HeliaServer {
           const finalUrl = this.heliaFetch.sanitizeUrlPath(`${request.headers.referer}/${reqDomain}/${relativePath}`)
           this.log('Redirecting to final URL:', finalUrl)
           response.redirect(finalUrl)
+          return true
         }
       }
     }
+    return false
   }
 
   /**
@@ -139,7 +141,10 @@ export class HeliaServer {
   async fetch ({ request, response }: IRouteHandler): Promise<void> {
     try {
       await this.isReady
-      await this.requiresAdditionalRedirection({ request, response })
+      if (await this.requiresAdditionalRedirection({ request, response })) {
+        // the call needs redirection so we'll end it here.
+        return
+      }
       this.log('Requesting content from helia:', request.path)
       await this.fetchFromHeliaAndWriteToResponse({ response, request })
     } catch (error) {
