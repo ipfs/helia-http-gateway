@@ -45,7 +45,7 @@ export class HeliaServer {
         handler: async (request, response): Promise<void> => this.fetch({ request, response })
       }, {
         path: '/api/v0/version',
-        type: 'get',
+        type: 'post',
         handler: async (request, response): Promise<void> => this.heliaVersion({ request, response })
       }, {
         path: '/api/v0/repo/gc',
