@@ -8,6 +8,8 @@ import { createHelia, type Helia } from 'helia'
 import { LRUCache } from 'lru-cache'
 import { CID } from 'multiformats/cid'
 import pTryEach from 'p-try-each'
+import type { Libp2p } from '@libp2p/interface'
+import type { PubSub } from '@libp2p/interface/pubsub'
 
 const ROOT_FILE_PATTERNS = [
   'index.html',
@@ -22,7 +24,7 @@ export class HeliaFetch {
   private fs!: UnixFS
   private readonly log: debug.Debugger
   private readonly rootFilePatterns: string[]
-  public node!: Helia
+  public node!: Helia<Libp2p<{ pubsub: PubSub }>>
   public ready: Promise<void>
   private ipns!: ReturnType<typeof ipns>
   private readonly ipnsResolutionCache = new LRUCache<string, string>({
@@ -35,7 +37,7 @@ export class HeliaFetch {
     rootFilePatterns = ROOT_FILE_PATTERNS,
     logger
   }: {
-    node?: Helia
+    node?: Helia<Libp2p<{ pubsub: PubSub }>>
     rootFilePatterns?: string[]
     logger?: debug.Debugger
   } = {}) {
@@ -64,16 +66,7 @@ export class HeliaFetch {
     })
     this.ipns = ipns(this.node, [
       dht(this.node),
-      pubsub({
-        datastore: this.node.datastore,
-        libp2p: {
-          peerId: this.node.libp2p.peerId,
-          services: {
-            // mismatch types
-            pubsub: this.node.libp2p.services.pubsub
-          }
-        }
-      })
+      pubsub(this.node)
     ])
     this.fs = unixfs(this.node)
     this.log('Helia Setup Complete!')

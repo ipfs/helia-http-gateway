@@ -47,6 +47,7 @@
   "dependencies": {
     "@helia/ipns": "2.0.1",
     "@helia/unixfs": "1.x",
+    "@libp2p/interface": "0.1.3",
     "express": "4.x",
     "express-prom-bundle": "6.x",
     "file-type": "18.x",
