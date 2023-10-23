@@ -57,6 +57,13 @@ $ npm run test:e2e -- ${PLAYWRIGHT_OPTIONS} # run tests with custom playwright o
 
 ```
 
+### Get clinicjs flamecharts and doctor reports from e2e tests
+
+```sh
+$ npm run test:e2e-doctor # Run the dev server with clinicjs doctor, execute e2e tests, and generate a report.
+$ npm run test:e2e-flame # Run the dev server with clinicjs flame, execute e2e tests, and generate a report.
+```
+
 ## Author
 
 - [whizzzkid](https://github.com/whizzzkid)

@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
-import { PORT } from './src/constants.js'
+import { HOST, PORT } from './src/constants.js'
 
 /**
  * Read environment variables from file.
@@ -56,8 +56,8 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm run start:dev',
-    url: `http://localhost:${PORT}`,
+    command: (process.env.DOCTOR != null) ? 'npm run start:dev-doctor' : 'npm run start:dev',
+    url: `http://${HOST}:${PORT}`,
     // Tiros does not re-use the existing server.
     reuseExistingServer: process.env.CI == null
   }
