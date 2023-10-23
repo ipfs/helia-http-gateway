@@ -28,7 +28,7 @@ $ docker build . --tag helia --platform linux/arm64
 ### Running
 
 ```sh
-$ docker run -it -p 8080:8080 -e DEBUG="helia-server" helia
+$ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway" helia
 ```
 
 ## Supported Environment Variables

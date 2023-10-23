@@ -5,7 +5,7 @@ import session from 'express-session'
 import { HOST, PORT } from './constants.js'
 import { HeliaServer, type IRouteEntry } from './heliaServer.js'
 
-const logger = debug('helia-server')
+const logger = debug('helia-http-gateway')
 const promMetricsMiddleware = promBundle({ includeMethod: true })
 
 const heliaServer = new HeliaServer(logger)
