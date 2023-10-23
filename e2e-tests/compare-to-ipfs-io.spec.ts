@@ -25,14 +25,12 @@ const pages = [
   // '/ipns/web3.storage' // currently timing out for Helia
 ]
 
-// don't bombard Helia gateway with parallel requests. It's not ready for that yet
-// test.describe.configure({ mode: 'serial' })
-
 // increase default test timeout to 2 minutes
 test.setTimeout(120000)
 
 // now for each page, make sure we can request the website, the content is not empty, and status code is 200
 pages.forEach((pagePath) => {
+  // afterEach, we should request /api/v0/repo/gc to clear the cache
   test(`helia-http-gateway matches ipfs.io for path '${pagePath}'`, async ({ page }) => {
     const ipfsIoResponse = await page.goto(`http://ipfs.io${pagePath}`)
     expect(ipfsIoResponse?.status()).toBe(200)
