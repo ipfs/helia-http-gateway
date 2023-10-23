@@ -1,6 +1,5 @@
-import { defineConfig, devices } from '@playwright/test';
-
-import {PORT} from './src/constants.js'
+import { defineConfig, devices } from '@playwright/test'
+import { PORT } from './src/constants.js'
 
 /**
  * Read environment variables from file.
@@ -16,11 +15,11 @@ export default defineConfig({
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
+  forbidOnly: Boolean(process.env.CI),
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  retries: (process.env.CI != null) ? 2 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: (process.env.CI != null) ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -29,15 +28,16 @@ export default defineConfig({
     // baseURL: 'http://127.0.0.1:3000',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+    trace: 'on-first-retry'
   },
+  maxFailures: 5,
 
   /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
+      use: { ...devices['Desktop Chrome'] }
+    }
 
     // {
     //   name: 'firefox',
@@ -55,6 +55,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run start:dev',
     url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
-  },
-});
+    // Tiros does not re-use the existing server.
+    reuseExistingServer: process.env.CI == null
+  }
+})
