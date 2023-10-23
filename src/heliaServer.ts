@@ -62,8 +62,9 @@ export class HeliaServer {
   /**
    * Computes referer path for the request.
    */
-  private fetchRefererPath ({ request }: IRouteHandler): string {
-    let refererPath = new URL(request.headers.referer ?? 'http://ipfs.io').pathname
+  private getRefererFromRouteHandler ({ request }: IRouteHandler): string {
+    // this defaults to hostname because we want '/' to be the default referer path.
+    let refererPath = new URL(request.headers.referer ?? request.hostname).pathname
     if (refererPath === '/') {
       refererPath = request.sessionID
     }
@@ -80,7 +81,7 @@ export class HeliaServer {
    */
   private async redirectRelative ({ request, response }: IRouteHandler): Promise<void> {
     try {
-      const refererPath = this.fetchRefererPath({ request, response })
+      const refererPath = this.getRefererFromRouteHandler({ request, response })
       let relativeRedirectPath = `${refererPath}${request.path}`
       const { namespace, address } = this.heliaFetch.parsePath(refererPath)
       if (namespace === 'ipns') {
@@ -127,7 +128,7 @@ export class HeliaServer {
     } = this.heliaFetch.parsePath(request.path)
 
     try {
-      const refererPath = this.fetchRefererPath({ request, response })
+      const refererPath = this.getRefererFromRouteHandler({ request, response })
       const {
         namespace: refNamespace,
         address: refDomain
