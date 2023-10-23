@@ -1,4 +1,4 @@
-# helia-docker
+# helia-http-gateway
 
 Docker images for Helia.
 

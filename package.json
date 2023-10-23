@@ -1,5 +1,5 @@
 {
-  "name": "helia-docker",
+  "name": "helia-http-gateway",
   "version": "0.0.1",
   "description": "Helia in Docker Container",
   "main": "src/index.ts",
@@ -13,7 +13,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/whizzzkid/helia-docker.git"
+    "url": "git+https://github.com/whizzzkid/helia-http-gateway.git"
   },
   "engines": {
     "node": ">=20",
@@ -34,9 +34,9 @@
   "author": "Nishant Arora (me@nishantarora.in)",
   "license": "Apache-2.0 OR MIT",
   "bugs": {
-    "url": "https://github.com/whizzzkid/helia-docker/issues"
+    "url": "https://github.com/whizzzkid/helia-http-gateway/issues"
   },
-  "homepage": "https://github.com/whizzzkid/helia-docker#readme",
+  "homepage": "https://github.com/whizzzkid/helia-http-gateway#readme",
   "devDependencies": {
     "@types/express": "4.x",
     "@types/express-session": "1.17.9",
