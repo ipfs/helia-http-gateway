@@ -60,22 +60,36 @@ export class HeliaServer {
   }
 
   /**
+   * Computes referer path for the request.
+   */
+  private getRefererFromRouteHandler ({ request }: IRouteHandler): string {
+    // this defaults to hostname because we want '/' to be the default referer path.
+    let refererPath = new URL(request.headers.referer ?? request.hostname).pathname
+    if (refererPath === '/') {
+      refererPath = request.sessionID
+    }
+
+    if (refererPath !== undefined) {
+      return refererPath
+    }
+
+    throw new Error('Error calculating referer')
+  }
+
+  /**
    * Handles redirecting to the relative path
    */
   private async redirectRelative ({ request, response }: IRouteHandler): Promise<void> {
     try {
-      const referrerPath = new URL(request.headers.referer ?? '').pathname
-      if (referrerPath !== undefined) {
-        this.log('Referer found:', referrerPath)
-        let relativeRedirectPath = `${referrerPath}${request.path}`
-        const { namespace, address } = this.heliaFetch.parsePath(referrerPath)
-        if (namespace === 'ipns') {
-          relativeRedirectPath = `/${namespace}/${address}${request.path}`
-        }
-        // absolute redirect
-        this.log('Redirecting to relative to referer:', referrerPath)
-        response.redirect(relativeRedirectPath)
+      const refererPath = this.getRefererFromRouteHandler({ request, response })
+      let relativeRedirectPath = `${refererPath}${request.path}`
+      const { namespace, address } = this.heliaFetch.parsePath(refererPath)
+      if (namespace === 'ipns') {
+        relativeRedirectPath = `/${namespace}/${address}${request.path}`
       }
+      // absolute redirect
+      this.log('Redirecting to relative to referer:', refererPath)
+      response.redirect(relativeRedirectPath)
     } catch (error) {
       this.log('Error redirecting to relative path:', error)
       response.status(500).end()
@@ -113,9 +127,8 @@ export class HeliaServer {
       address: reqDomain
     } = this.heliaFetch.parsePath(request.path)
 
-    if (request.headers.referer !== undefined) {
-      this.log('Referer found:', request.headers.referer)
-      const refererPath = new URL(request.headers.referer).pathname
+    try {
+      const refererPath = this.getRefererFromRouteHandler({ request, response })
       const {
         namespace: refNamespace,
         address: refDomain
@@ -131,6 +144,8 @@ export class HeliaServer {
           return true
         }
       }
+    } catch (error) {
+      this.log('Error checking for additional redirection:', error)
     }
     return false
   }
@@ -189,5 +204,15 @@ export class HeliaServer {
     this.log('GCing node')
     await this.heliaFetch.node?.gc()
     response.status(200).end()
+  }
+
+  /**
+   * Generates a session ID for the request.
+   * This is a very ghetto way of identifying what the root ipns path for a request is.
+   * Overloading the sessionID the first request allows us to use the same session for all subsequent requests. Mostly!
+   * In many cases it won't work, but the browser won't care for those either.
+   */
+  public sessionId (request: Request): string {
+    return request.sessionID ?? request.path
   }
 }
