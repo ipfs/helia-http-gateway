@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { PORT } from './constants.js'
+import { HOST, PORT } from './constants.js'
 /**
  * This healthcheck script is used to check if the server is running and healthy.
  */
