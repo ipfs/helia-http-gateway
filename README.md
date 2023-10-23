@@ -39,6 +39,24 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-server" helia
 | `PORT` | Port to listen on | `8080` |
 | `HOST` | Host to listen on | `0.0.0.0` |
 
+## E2E Testing
+
+We have some tests enabled that simulate running inside of [ProbeLab's Tiros](https://github.com/plprobelab/tiros), via playwright. These tests request the same paths from ipfs.io and ensure that the resulting text matches. This is not a direct replacement for [gateway conformance testing](https://github.com/ipfs/gateway-conformance), but helps us ensure the helia-http-gateway is working as expected.
+
+By default, these tests:
+
+1. Run in serial
+2. Allow for up to 5 failures before failing the whole suite run.
+3. Have an individual test timeout of two minutes.
+
+### Run e2e tests locally
+
+```sh
+$ npm run test:e2e # run all tests
+$ npm run test:e2e -- ${PLAYWRIGHT_OPTIONS} # run tests with custom playwright options.
+
+```
+
 ## Author
 
 - [whizzzkid](https://github.com/whizzzkid)

@@ -9,6 +9,7 @@
     },
     "include": [
       "src",
-      "test"
+      "test",
+      "e2e-tests"
     ]
   }
