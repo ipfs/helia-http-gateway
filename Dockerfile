@@ -8,4 +8,7 @@ WORKDIR /app
 COPY . .
 RUN npm ci --quiet
 RUN npm run build
+
+HEALTHCHECK --interval=12s --timeout=12s --start-period=10s CMD npm run healthcheck
+
 CMD [ "npm", "start" ]
