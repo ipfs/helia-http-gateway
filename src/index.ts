@@ -2,6 +2,7 @@ import debug from 'debug'
 import express from 'express'
 import promBundle from 'express-prom-bundle'
 import session from 'express-session'
+import { HOST, PORT } from './constants.js'
 import { HeliaServer, type IRouteEntry } from './heliaServer.js'
 
 const logger = debug('helia-server')
@@ -9,10 +10,6 @@ const promMetricsMiddleware = promBundle({ includeMethod: true })
 
 const heliaServer = new HeliaServer(logger)
 await heliaServer.isReady
-
-// Constants
-const PORT = (process?.env?.PORT ?? 8080) as number
-const HOST = process?.env?.HOST ?? '0.0.0.0'
 
 // Add the prometheus middleware
 const app = express()
