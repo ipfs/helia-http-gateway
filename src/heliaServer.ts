@@ -215,11 +215,4 @@ export class HeliaServer {
   public sessionId (request: Request): string {
     return request.sessionID ?? request.path
   }
-
-  /**
-   * Stop the server
-   */
-  async stop (): Promise<void> {
-    await this.heliaFetch.stop()
-  }
 }
