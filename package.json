@@ -12,6 +12,7 @@
     "start:dev-flame": "npm run build && npx clinic flame --name playwright -- node dist/src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:e2e": "playwright test",
+    "test:http-e2e": "cross-env USE_BITSWAP=false USE_LIBP2P=false playwright test",
     "test:e2e-flame": "concurrently -k --ks SIGINT -s all -n \"gateway,playwright\" -c \"magenta,blue\" \"npm run start:dev-flame\" \"wait-on 'http://127.0.0.1:$PORT' && npm run test:e2e\"",
     "test:e2e-doctor": "concurrently -k --ks SIGINT -s all -n \"gateway,playwright\" -c \"magenta,blue\" \"npm run start:dev-doctor\" \"wait-on 'http://127.0.0.1:$PORT' && npm run test:e2e\"",
     "healthcheck": "node dist/src/healthcheck.js"
