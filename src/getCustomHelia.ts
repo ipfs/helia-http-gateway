@@ -14,10 +14,13 @@ export async function getCustomHelia (): Promise<Helia> {
     config.blockBrokers?.push(bitswap())
   }
 
-  if (TRUSTLESS_GATEWAYS != null && USE_TRUSTLESS_GATEWAYS) {
-    config.blockBrokers?.push(trustlessGateway({ gateways: TRUSTLESS_GATEWAYS }))
-  } else if (USE_TRUSTLESS_GATEWAYS) {
-    config.blockBrokers?.push(trustlessGateway())
+  if (USE_TRUSTLESS_GATEWAYS) {
+    if (TRUSTLESS_GATEWAYS != null) {
+      let gateway = trustlessGateway({ gateways: TRUSTLESS_GATEWAYS })
+    } else {
+      let gateway = trustlessGateway()
+    }
+    config.blockBrokers?.push(gateway)
   }
 
   /**
