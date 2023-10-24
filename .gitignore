@@ -133,3 +133,4 @@ build
 /playwright-report/
 /playwright/.cache/
 screenshots
+.envrc

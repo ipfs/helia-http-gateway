@@ -129,3 +129,20 @@ build
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# other dotfiles
+.git
+.gitignore
+.dockerignore
+.github
+.tool-versions
+.envrc
+
+# playwright stuff
+e2e-tests
+playwright.config.ts
+playwright-report
+screenshots
+
+# Other misc files that don't make sense in the docker container
+README.md

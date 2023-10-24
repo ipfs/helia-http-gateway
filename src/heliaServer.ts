@@ -1,5 +1,6 @@
 import { type Request, type Response } from 'express'
 import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
+import { getCustomHelia } from './getCustomHelia.js'
 import { HeliaFetch } from './heliaFetch.js'
 import type debug from 'debug'
 
@@ -34,7 +35,10 @@ export class HeliaServer {
    * Initialize the HeliaServer instance
    */
   async init (): Promise<void> {
-    this.heliaFetch = new HeliaFetch({ logger: this.log })
+    this.heliaFetch = new HeliaFetch({
+      logger: this.log,
+      node: await getCustomHelia()
+    })
     await this.heliaFetch.ready
     // eslint-disable-next-line no-console
     console.log('Helia Started!')
@@ -214,5 +218,12 @@ export class HeliaServer {
    */
   public sessionId (request: Request): string {
     return request.sessionID ?? request.path
+  }
+
+  /**
+   * Stop the server
+   */
+  async stop (): Promise<void> {
+    await this.heliaFetch.stop()
   }
 }

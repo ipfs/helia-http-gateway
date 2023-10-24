@@ -65,6 +65,7 @@ export class HeliaFetch {
       blockstore: new MemoryBlockstore(),
       datastore: new MemoryDatastore()
     })
+    // @ts-expect-error - helia@next does not seem to work with helia-unixfs
     this.fs = unixfs(this.node)
     this.log('Helia Setup Complete!')
   }
@@ -186,5 +187,12 @@ export class HeliaFetch {
 
     // no options needed, because we already have the CID for the rootFile
     return this.getFileResponse(rootFile.cid)
+  }
+
+  /**
+   * shut down the node
+   */
+  async stop (): Promise<void> {
+    await this.node.stop()
   }
 }

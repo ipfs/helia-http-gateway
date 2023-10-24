@@ -12,6 +12,7 @@
     "start:dev-flame": "npm run build && npx clinic flame --name playwright -- node dist/src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:e2e": "playwright test",
+    "test:http-e2e": "cross-env USE_BITSWAP=false USE_LIBP2P=false playwright test",
     "test:e2e-flame": "concurrently -k --ks SIGINT -s all -n \"gateway,playwright\" -c \"magenta,blue\" \"npm run start:dev-flame\" \"wait-on 'http://127.0.0.1:$PORT' && npm run test:e2e\"",
     "test:e2e-doctor": "concurrently -k --ks SIGINT -s all -n \"gateway,playwright\" -c \"magenta,blue\" \"npm run start:dev-doctor\" \"wait-on 'http://127.0.0.1:$PORT' && npm run test:e2e\"",
     "healthcheck": "node dist/src/healthcheck.js"
@@ -59,11 +60,13 @@
   },
   "dependencies": {
     "@helia/unixfs": "1.x",
+    "blockstore-level": "^1.1.4",
+    "datastore-level": "^10.1.4",
     "express": "4.x",
     "express-prom-bundle": "6.x",
     "express-session": "1.17.3",
     "file-type": "18.x",
-    "helia": "2.x",
+    "helia": "next",
     "lru-cache": "10.x",
     "mime-types": "2.x",
     "p-try-each": "1.x"
