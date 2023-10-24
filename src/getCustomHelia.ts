@@ -15,10 +15,9 @@ export async function getCustomHelia (): Promise<Helia> {
   }
 
   if (USE_TRUSTLESS_GATEWAYS) {
+    let gateway = trustlessGateway()
     if (TRUSTLESS_GATEWAYS != null) {
-      let gateway = trustlessGateway({ gateways: TRUSTLESS_GATEWAYS })
-    } else {
-      let gateway = trustlessGateway()
+      gateway = trustlessGateway({ gateways: TRUSTLESS_GATEWAYS })
     }
     config.blockBrokers?.push(gateway)
   }
