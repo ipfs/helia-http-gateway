@@ -187,4 +187,11 @@ export class HeliaFetch {
     // no options needed, because we already have the CID for the rootFile
     return this.getFileResponse(rootFile.cid)
   }
+
+  /**
+   * shut down the node
+   */
+  async stop (): Promise<void> {
+    await this.node.stop()
+  }
 }
