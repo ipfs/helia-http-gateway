@@ -16,7 +16,6 @@ RUN npm run build
 ENV NODE_ENV production
 RUN npm prune --production
 
-# TODO: use a smaller base image
 FROM node:20-slim as app
 WORKDIR /app
 # built src without dev dependencies
