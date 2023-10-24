@@ -59,11 +59,13 @@
   },
   "dependencies": {
     "@helia/unixfs": "1.x",
+    "blockstore-level": "^1.1.4",
+    "datastore-level": "^10.1.4",
     "express": "4.x",
     "express-prom-bundle": "6.x",
     "express-session": "1.17.3",
     "file-type": "18.x",
-    "helia": "2.x",
+    "helia": "next",
     "lru-cache": "10.x",
     "mime-types": "2.x",
     "p-try-each": "1.x"

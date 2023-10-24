@@ -65,6 +65,7 @@ export class HeliaFetch {
       blockstore: new MemoryBlockstore(),
       datastore: new MemoryDatastore()
     })
+    // @ts-expect-error - helia@next does not seem to work with helia-unixfs
     this.fs = unixfs(this.node)
     this.log('Helia Setup Complete!')
   }
