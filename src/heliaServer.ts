@@ -33,7 +33,7 @@ export class HeliaServer {
   /**
    * Initialize the HeliaServer instance
    */
-  init = async (): Promise<void> => {
+  async init (): Promise<void> {
     this.heliaFetch = new HeliaFetch({ logger: this.log })
     await this.heliaFetch.ready
     // eslint-disable-next-line no-console
@@ -62,7 +62,7 @@ export class HeliaServer {
   /**
    * Computes referer path for the request.
    */
-  private readonly getRefererFromRouteHandler = ({ request }: IRouteHandler): string => {
+  private getRefererFromRouteHandler ({ request }: IRouteHandler): string {
     // this defaults to hostname because we want '/' to be the default referer path.
     let refererPath = new URL(request.headers.referer ?? request.hostname).pathname
     if (refererPath === '/') {
@@ -79,7 +79,7 @@ export class HeliaServer {
   /**
    * Handles redirecting to the relative path
    */
-  private readonly redirectRelative = async ({ request, response }: IRouteHandler): Promise<void> => {
+  private async redirectRelative ({ request, response }: IRouteHandler): Promise<void> {
     try {
       const refererPath = this.getRefererFromRouteHandler({ request, response })
       let relativeRedirectPath = `${refererPath}${request.path}`
@@ -99,7 +99,7 @@ export class HeliaServer {
   /**
    * Fetches from helia and writes the chunks to the response.
    */
-  private readonly fetchFromHeliaAndWriteToResponse = async ({ request, response }: IRouteHandler): Promise<void> => {
+  private async fetchFromHeliaAndWriteToResponse ({ request, response }: IRouteHandler): Promise<void> {
     await this.isReady
     let type: string | undefined
     const { path } = request
@@ -120,7 +120,7 @@ export class HeliaServer {
   /**
    * Checks if the request requires additional redirection.
    */
-  requiresAdditionalRedirection = async ({ request, response }: IRouteHandler): Promise<boolean> => {
+  async requiresAdditionalRedirection ({ request, response }: IRouteHandler): Promise<boolean> {
     const {
       namespace: reqNamespace,
       relativePath,
@@ -153,7 +153,7 @@ export class HeliaServer {
   /**
    * Fetches a path, which basically queries delegated routing API and then fetches the path from helia.
    */
-  fetch = async ({ request, response }: IRouteHandler): Promise<void> => {
+  async fetch ({ request, response }: IRouteHandler): Promise<void> {
     try {
       await this.isReady
       if (await this.requiresAdditionalRedirection({ request, response })) {
@@ -164,14 +164,14 @@ export class HeliaServer {
       await this.fetchFromHeliaAndWriteToResponse({ response, request })
     } catch (error) {
       this.log('Error requesting content from helia:', error)
-      response.status(500).send({ error }).end()
+      response.status(500).end()
     }
   }
 
   /**
    * Get the helia version
    */
-  heliaVersion = async ({ response }: IRouteHandler): Promise<void> => {
+  async heliaVersion ({ response }: IRouteHandler): Promise<void> {
     await this.isReady
 
     try {
@@ -192,14 +192,14 @@ export class HeliaServer {
       this.log('Helia version info:', this.heliaVersionInfo)
       response.json(this.heliaVersionInfo)
     } catch (error) {
-      response.status(500).send({ error }).end()
+      response.status(500).end()
     }
   }
 
   /**
    * GC the node
    */
-  gc = async ({ response }: IRouteHandler): Promise<void> => {
+  async gc ({ response }: IRouteHandler): Promise<void> {
     await this.isReady
     this.log('GCing node')
     await this.heliaFetch.node?.gc()
@@ -219,7 +219,7 @@ export class HeliaServer {
   /**
    * Stop the server
    */
-  stop = async (): Promise<void> => {
+  async stop (): Promise<void> {
     await this.heliaFetch.stop()
   }
 }
