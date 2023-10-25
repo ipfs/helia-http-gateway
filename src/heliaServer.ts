@@ -1,4 +1,4 @@
-import { type Request, type Response } from 'express'
+import { type FastifyReply, type FastifyRequest } from 'fastify'
 import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
 import { getCustomHelia } from './getCustomHelia.js'
 import { HeliaFetch } from './heliaFetch.js'
@@ -6,26 +6,27 @@ import type debug from 'debug'
 
 const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.com/repos/ipfs/helia/git/ref/tags/helia-v${version}`
 
-export interface IRouteEntry {
+export interface RouteEntry {
   path: string
-  type: 'get' | 'post'
-  handler: (request: Request, response: Response) => Promise<void>
+  type: 'GET' | 'POST'
+  handler: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
 }
 
-interface IRouteHandler {
-  request: Request
-  response: Response
+interface RouteHandler {
+  request: FastifyRequest
+  reply: FastifyReply
 }
 
 export class HeliaServer {
   private heliaFetch!: HeliaFetch
   private heliaVersionInfo!: { Version: string, Commit: string }
+  private readonly HOST_PART_REGEX = /^(?<address>.+)\.(?<namespace>ip[fn]s)\..+$/
   private readonly log: debug.Debugger
   public isReady: Promise<void>
-  public routes: IRouteEntry[]
+  public routes: RouteEntry[]
 
   constructor (logger: debug.Debugger) {
-    this.log = logger.extend('express')
+    this.log = logger.extend('fastify')
     this.isReady = this.init()
     this.routes = []
     this.log('Initialized')
@@ -45,137 +46,84 @@ export class HeliaServer {
     this.routes = [
       {
         path: '/:ns(ipfs|ipns)/*',
-        type: 'get',
-        handler: async (request, response): Promise<void> => this.fetch({ request, response })
+        type: 'GET',
+        handler: async (request, reply): Promise<void> => this.redirectToSubdomainGW({ request, reply })
       }, {
         path: '/api/v0/version',
-        type: 'post',
-        handler: async (request, response): Promise<void> => this.heliaVersion({ request, response })
+        type: 'POST',
+        handler: async (request, reply): Promise<void> => this.heliaVersion({ request, reply })
+      }, {
+        path: '/api/v0/version',
+        type: 'GET',
+        handler: async (request, reply): Promise<void> => this.heliaVersion({ request, reply })
       }, {
         path: '/api/v0/repo/gc',
-        type: 'post',
-        handler: async (request, response): Promise<void> => this.gc({ request, response })
+        type: 'POST',
+        handler: async (request, reply): Promise<void> => this.gc({ request, reply })
       }, {
         path: '/*',
-        type: 'get',
-        handler: async (request, response): Promise<void> => this.redirectRelative({ request, response })
+        type: 'GET',
+        handler: async (request, reply): Promise<void> => this.fetch({ request, reply })
       }
     ]
   }
 
   /**
-   * Computes referer path for the request.
+   * Redirects to the subdomain gateway.
    */
-  private getRefererFromRouteHandler ({ request }: IRouteHandler): string {
-    // this defaults to hostname because we want '/' to be the default referer path.
-    let refererPath = new URL(request.headers.referer ?? request.hostname).pathname
-    if (refererPath === '/') {
-      refererPath = request.sessionID
-    }
-
-    if (refererPath !== undefined) {
-      return refererPath
-    }
-
-    throw new Error('Error calculating referer')
+  private async redirectToSubdomainGW ({ request, reply }: RouteHandler): Promise<void> {
+    const { namespace, address, relativePath } = this.heliaFetch.parsePath(request.url)
+    const finalUrl = `//${address}.${namespace}.${request.hostname}${relativePath}`
+    this.log('Redirecting to final URL:', finalUrl)
+    await reply.redirect(finalUrl)
   }
 
   /**
-   * Handles redirecting to the relative path
+   * Parses the host into its parts.
    */
-  private async redirectRelative ({ request, response }: IRouteHandler): Promise<void> {
-    try {
-      const refererPath = this.getRefererFromRouteHandler({ request, response })
-      let relativeRedirectPath = `${refererPath}${request.path}`
-      const { namespace, address } = this.heliaFetch.parsePath(refererPath)
-      if (namespace === 'ipns') {
-        relativeRedirectPath = `/${namespace}/${address}${request.path}`
-      }
-      // absolute redirect
-      this.log('Redirecting to relative to referer:', refererPath)
-      response.redirect(relativeRedirectPath)
-    } catch (error) {
-      this.log('Error redirecting to relative path:', error)
-      response.status(500).end()
+  private parseHostParts (host: string): { address: string, namespace: string } {
+    const result = host.match(this.HOST_PART_REGEX)
+    if (result == null || result?.groups == null) {
+      this.log(`Error parsing path: ${host}:`, result)
+      throw new Error(`Subdomain: ${host} is not valid`)
     }
-  }
-
-  /**
-   * Fetches from helia and writes the chunks to the response.
-   */
-  private async fetchFromHeliaAndWriteToResponse ({ request, response }: IRouteHandler): Promise<void> {
-    await this.isReady
-    let type: string | undefined
-    const { path } = request
-    this.log('Fetching from Helia:', path)
-    for await (const chunk of await this.heliaFetch.fetch(path)) {
-      if (type === undefined) {
-        const { relativePath } = this.heliaFetch.parsePath(path)
-        type = await parseContentType({ bytes: chunk, path: relativePath })
-        // this needs to happen first.
-        response.setHeader('Content-Type', type ?? DEFAULT_MIME_TYPE)
-        response.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
-      }
-      response.write(Buffer.from(chunk))
-    }
-    response.end()
-  }
-
-  /**
-   * Checks if the request requires additional redirection.
-   */
-  async requiresAdditionalRedirection ({ request, response }: IRouteHandler): Promise<boolean> {
-    const {
-      namespace: reqNamespace,
-      relativePath,
-      address: reqDomain
-    } = this.heliaFetch.parsePath(request.path)
-
-    try {
-      const refererPath = this.getRefererFromRouteHandler({ request, response })
-      const {
-        namespace: refNamespace,
-        address: refDomain
-      } = this.heliaFetch.parsePath(refererPath)
-
-      if (reqNamespace !== refNamespace || reqDomain !== refDomain) {
-        if (!request.originalUrl.startsWith(refererPath) &&
-          (refNamespace === 'ipns' || refNamespace === 'ipfs')
-        ) {
-          const finalUrl = this.heliaFetch.sanitizeUrlPath(`${request.headers.referer}/${reqDomain}/${relativePath}`)
-          this.log('Redirecting to final URL:', finalUrl)
-          response.redirect(finalUrl)
-          return true
-        }
-      }
-    } catch (error) {
-      this.log('Error checking for additional redirection:', error)
-    }
-    return false
+    return result.groups as { address: string, namespace: string }
   }
 
   /**
    * Fetches a path, which basically queries delegated routing API and then fetches the path from helia.
    */
-  async fetch ({ request, response }: IRouteHandler): Promise<void> {
+  async fetch ({ request, reply }: RouteHandler): Promise<void> {
     try {
       await this.isReady
-      if (await this.requiresAdditionalRedirection({ request, response })) {
-        // the call needs redirection so we'll end it here.
-        return
+      this.log('Requesting content from helia:', request.url)
+      let type: string | undefined
+      const { address, namespace } = this.parseHostParts(request.hostname)
+      const { url: relativePath } = request
+      this.log('Fetching from Helia:', { address, namespace, relativePath })
+      // raw response is needed to respond with the correct content type.
+      for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath })) {
+        if (type === undefined) {
+          type = await parseContentType({ bytes: chunk, path: relativePath })
+          // this needs to happen first.
+          reply.raw.writeHead(200, {
+            'Content-Type': type ?? DEFAULT_MIME_TYPE,
+            'Cache-Control': 'public, max-age=31536000, immutable'
+          })
+        }
+        reply.raw.write(Buffer.from(chunk))
       }
-      this.log('Requesting content from helia:', request.path)
-      await this.fetchFromHeliaAndWriteToResponse({ response, request })
+      reply.raw.end()
     } catch (error) {
       this.log('Error requesting content from helia:', error)
-      response.status(500).end()
+      await reply.code(500).send(error)
     }
   }
 
   /**
    * Get the helia version
    */
-  async heliaVersion ({ response }: IRouteHandler): Promise<void> {
+  async heliaVersion ({ reply }: RouteHandler): Promise<void> {
     await this.isReady
 
     try {
@@ -185,39 +133,40 @@ export class HeliaServer {
           assert: { type: 'json' }
         })
         const { version: heliaVersionString } = packageJson
+        this.log('Helia version string:', heliaVersionString)
 
-        const ghResp = await (await fetch(HELIA_RELEASE_INFO_API(heliaVersionString))).json()
-        this.heliaVersionInfo = {
-          Version: heliaVersionString,
-          Commit: ghResp.object.sha.slice(0, 7)
+        // handling the next versioning strategy
+        const [heliaNextVersion, heliaNextCommit] = heliaVersionString.split('-')
+        if (heliaNextCommit != null) {
+          this.heliaVersionInfo = {
+            Version: heliaNextVersion,
+            Commit: heliaNextCommit
+          }
+        } else {
+          // if this is not a next version, we will fetch the commit from github.
+          const ghResp = await (await fetch(HELIA_RELEASE_INFO_API(heliaVersionString))).json()
+          this.heliaVersionInfo = {
+            Version: heliaVersionString,
+            Commit: ghResp.object.sha.slice(0, 7)
+          }
         }
       }
 
       this.log('Helia version info:', this.heliaVersionInfo)
-      response.json(this.heliaVersionInfo)
+      await reply.code(200).header('Content-Type', 'application/json; charset=utf-8').send(this.heliaVersionInfo)
     } catch (error) {
-      response.status(500).end()
+      await reply.code(500).send(error)
     }
   }
 
   /**
    * GC the node
    */
-  async gc ({ response }: IRouteHandler): Promise<void> {
+  async gc ({ reply }: RouteHandler): Promise<void> {
     await this.isReady
     this.log('GCing node')
     await this.heliaFetch.node?.gc()
-    response.status(200).end()
-  }
-
-  /**
-   * Generates a session ID for the request.
-   * This is a very ghetto way of identifying what the root ipns path for a request is.
-   * Overloading the sessionID the first request allows us to use the same session for all subsequent requests. Mostly!
-   * In many cases it won't work, but the browser won't care for those either.
-   */
-  public sessionId (request: Request): string {
-    return request.sessionID ?? request.path
+    await reply.code(200).send('OK')
   }
 
   /**

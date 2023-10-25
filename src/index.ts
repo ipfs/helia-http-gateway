@@ -1,48 +1,51 @@
 import debug from 'debug'
-import express from 'express'
-import promBundle from 'express-prom-bundle'
-import session from 'express-session'
-import { HOST, PORT } from './constants.js'
-import { HeliaServer, type IRouteEntry } from './heliaServer.js'
+import Fastify from 'fastify'
+import metricsPlugin from 'fastify-metrics'
+import { DEBUG, HOST, PORT, METRICS } from './constants.js'
+import { HeliaServer, type RouteEntry } from './heliaServer.js'
 
 const logger = debug('helia-http-gateway')
-const promMetricsMiddleware = promBundle({ includeMethod: true })
 
 const heliaServer = new HeliaServer(logger)
 await heliaServer.isReady
 
 // Add the prometheus middleware
-const app = express()
-app.use(promMetricsMiddleware)
-app.use(session({
-  genid: heliaServer.sessionId,
-  secret: 'very secret value'
-}))
-
-// Add the routes
-app.get('/', (req, res) => {
-  res.send('Helia Docker, to fetch a page, call `/ipns/<path>` or `/ipfs/<cid>`')
-})
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
-heliaServer.routes.map(({ type, path, handler }: IRouteEntry) => app[type](path, handler))
-
-const webServer = app.listen(PORT, HOST, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Server listening on http://${HOST}:${PORT}`)
-})
-
-const stopWebServer = async (): Promise<void> => new Promise<void>((resolve) => {
-  webServer.close((err) => {
-    if (err != null) {
-      // eslint-disable-next-line no-console
-      console.error(err)
-      process.exit(1)
+const app = Fastify({
+  logger: {
+    enabled: DEBUG !== '',
+    msgPrefix: 'helia-http-gateway:fastify',
+    level: 'info',
+    transport: {
+      target: 'pino-pretty'
     }
-    // eslint-disable-next-line no-console
-    console.log('Closed out remaining webServer connections.')
-    resolve()
+  }
+})
+
+if (METRICS === 'true') {
+  await app.register(metricsPlugin.default, { endpoint: '/metrics' })
+}
+
+heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
+  app.route({
+    method: type,
+    url: path,
+    handler
   })
 })
+
+await app.listen({ port: PORT, host: HOST })
+
+const stopWebServer = async (): Promise<void> => {
+  try {
+    await app.close()
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(error)
+    process.exit(1)
+  }
+  // eslint-disable-next-line no-console
+  console.log('Closed out remaining webServer connections.')
+}
 
 let shutdownRequested = false
 async function closeGracefully (signal: number): Promise<void> {

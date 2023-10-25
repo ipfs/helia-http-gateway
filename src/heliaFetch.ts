@@ -15,6 +15,12 @@ const ROOT_FILE_PATTERNS = [
 
 const DELEGATED_ROUTING_API = 'https://node3.delegate.ipfs.io/api/v0/name/resolve/'
 
+interface HeliaPathParts {
+  namespace: string
+  address: string
+  relativePath: string
+}
+
 /**
  * Fetches files from IPFS or IPNS
  */
@@ -22,6 +28,7 @@ export class HeliaFetch {
   private fs!: UnixFS
   private readonly delegatedRoutingApi: string
   private readonly log: debug.Debugger
+  private readonly PARSE_PATH_REGEX = /^\/(?<namespace>ip[fn]s)\/(?<address>[^/$]+)(?<relativePath>[^$]*)/
   private readonly rootFilePatterns: string[]
   public node!: Helia
   public ready: Promise<void>
@@ -73,19 +80,18 @@ export class HeliaFetch {
   /**
    * Parse a path into its namespace, address, and relative path
    */
-  public parsePath (path: string): { namespace: string, address: string, relativePath: string } {
+  public parsePath (path: string): HeliaPathParts {
     if (path === undefined) {
       throw new Error('Path is empty')
     }
     this.log(`Parsing path: ${path}`)
-    const regex = /^\/(?<namespace>ip[fn]s)\/(?<address>[^/$]+)(?<relativePath>[^$]*)/
-    const result = path.match(regex)
+    const result = path.match(this.PARSE_PATH_REGEX)
     if (result == null || result?.groups == null) {
       this.log(`Error parsing path: ${path}:`, result)
       throw new Error(`Path: ${path} is not valid, provide path as /ipfs/<cid> or /ipns/<path>`)
     }
     this.log('Parsed path:', result?.groups)
-    return result.groups as { namespace: string, address: string, relativePath: string }
+    return result.groups as unknown as HeliaPathParts
   }
 
   /**
@@ -96,13 +102,11 @@ export class HeliaFetch {
   }
 
   /**
-   * fetch a path from IPFS or IPNS
+   * fetch a path from a given namespace and address.
    */
-  public async fetch (path: string): Promise<AsyncIterable<Uint8Array>> {
+  public async fetch ({ namespace, address, relativePath }: HeliaPathParts): Promise<AsyncIterable<Uint8Array>> {
     try {
       await this.ready
-      this.log('Fetching:', path)
-      const { namespace, address, relativePath } = this.parsePath(path)
       this.log('Processing Fetch:', { namespace, address, relativePath })
       switch (namespace) {
         case 'ipfs':
@@ -112,6 +116,21 @@ export class HeliaFetch {
         default:
           throw new Error('Namespace is not valid, provide path as /ipfs/<cid> or /ipns/<path>')
       }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      this.log(`Error fetching: ${namespace}/${address}${relativePath}`, error)
+      throw error
+    }
+  }
+
+  /**
+   * fetch a path as string from IPFS or IPNS
+   */
+  public async fetchPath (path: string): Promise<AsyncIterable<Uint8Array>> {
+    try {
+      this.log('Fetching:', path)
+      const { namespace, address, relativePath } = this.parsePath(path)
+      return await this.fetch({ namespace, address, relativePath })
     } catch (error) {
       // eslint-disable-next-line no-console
       this.log(`Error fetching: ${path}`, error)
@@ -151,7 +170,7 @@ export class HeliaFetch {
     }
     const finalPath = `${this.ipnsResolutionCache.get(address)}${options?.path ?? ''}`
     this.log('Final IPFS path:', finalPath)
-    return this.fetch(finalPath)
+    return this.fetchPath(finalPath)
   }
 
   /**

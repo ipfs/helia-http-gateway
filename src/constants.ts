@@ -2,6 +2,15 @@ export const PORT = Number(process.env.PORT ?? 8080)
 
 export const HOST = process.env.HOST ?? '0.0.0.0'
 
+export const DEBUG = process.env.DEBUG ?? ''
+
+/**
+ * If set to any value other than 'true', we will disable prometheus metrics.
+ *
+ * @default 'true'
+ */
+export const METRICS = process.env.METRICS ?? 'true'
+
 /**
  * If not set, we will enable bitswap by default.
  */
