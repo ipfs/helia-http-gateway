@@ -38,6 +38,7 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway" helia
 | `DEBUG` | Debug level | `''`|
 | `PORT` | Port to listen on | `8080` |
 | `HOST` | Host to listen on | `0.0.0.0` |
+| `METRICS` | Whether to enable prometheus metrics. Any value other than 'true' will disable metrics. | `true` |
 | `USE_BITSWAP` | Use bitswap to fetch content from IPFS | `true` |
 | `USE_TRUSTLESS_GATEWAYS` | Whether to fetch content from trustless-gateways or not | `true` |
 | `TRUSTLESS_GATEWAYS` | Comma separated list of trusted gateways to fetch content from | [Defined in Helia](https://github.com/ipfs/helia/blob/main/packages/helia/src/block-brokers/trustless-gateway/index.ts) |
