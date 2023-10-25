@@ -52,6 +52,10 @@ export class HeliaServer {
         type: 'POST',
         handler: async (request, reply): Promise<void> => this.heliaVersion({ request, reply })
       }, {
+        path: '/api/v0/version',
+        type: 'GET',
+        handler: async (request, reply): Promise<void> => this.heliaVersion({ request, reply })
+      }, {
         path: '/api/v0/repo/gc',
         type: 'POST',
         handler: async (request, reply): Promise<void> => this.gc({ request, reply })
@@ -129,11 +133,22 @@ export class HeliaServer {
           assert: { type: 'json' }
         })
         const { version: heliaVersionString } = packageJson
+        this.log('Helia version string:', heliaVersionString)
 
-        const ghResp = await (await fetch(HELIA_RELEASE_INFO_API(heliaVersionString))).json()
-        this.heliaVersionInfo = {
-          Version: heliaVersionString,
-          Commit: ghResp.object.sha.slice(0, 7)
+        // handling the next versioning strategy
+        const [heliaNextVersion, heliaNextCommit] = heliaVersionString.split('-')
+        if (heliaNextCommit != null) {
+          this.heliaVersionInfo = {
+            Version: heliaNextVersion,
+            Commit: heliaNextCommit
+          }
+        } else {
+          // if this is not a next version, we will fetch the commit from github.
+          const ghResp = await (await fetch(HELIA_RELEASE_INFO_API(heliaVersionString))).json()
+          this.heliaVersionInfo = {
+            Version: heliaVersionString,
+            Commit: ghResp.object.sha.slice(0, 7)
+          }
         }
       }
 
