@@ -51,7 +51,8 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: (process.env.DOCTOR != null) ? 'npm run start:dev-doctor' : 'npm run start:dev',
-    url: `http://${HOST}:${PORT}`,
+    // url: `http://${host}`,
+    port: PORT,
     // Tiros does not re-use the existing server.
     reuseExistingServer: process.env.CI == null
   }
