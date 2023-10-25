@@ -66,6 +66,7 @@
     "helia": "next",
     "lru-cache": "10.x",
     "mime-types": "2.x",
-    "p-try-each": "1.x"
+    "p-try-each": "1.x",
+    "pino-pretty": "10.2.3"
   }
 }

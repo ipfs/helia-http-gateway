@@ -1,7 +1,7 @@
 import debug from 'debug'
 import Fastify from 'fastify'
 import metricsPlugin from 'fastify-metrics'
-import { HOST, PORT } from './constants.js'
+import { DEBUG, HOST, PORT } from './constants.js'
 import { HeliaServer, type RouteEntry } from './heliaServer.js'
 
 const logger = debug('helia-http-gateway')
@@ -10,7 +10,17 @@ const heliaServer = new HeliaServer(logger)
 await heliaServer.isReady
 
 // Add the prometheus middleware
-const app = Fastify({ logger })
+const app = Fastify({
+  logger: {
+    enabled: DEBUG !== '',
+    msgPrefix: 'helia-http-gateway:fastify',
+    level: 'info',
+    transport: {
+      target: 'pino-pretty'
+    }
+  }
+})
+
 await app.register(metricsPlugin.default, { endpoint: '/metrics' })
 
 heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
