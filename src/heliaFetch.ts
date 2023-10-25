@@ -28,6 +28,7 @@ export class HeliaFetch {
   private fs!: UnixFS
   private readonly delegatedRoutingApi: string
   private readonly log: debug.Debugger
+  private readonly PARSE_PATH_REGEX = /^\/(?<namespace>ip[fn]s)\/(?<address>[^/$]+)(?<relativePath>[^$]*)/
   private readonly rootFilePatterns: string[]
   public node!: Helia
   public ready: Promise<void>
@@ -84,8 +85,7 @@ export class HeliaFetch {
       throw new Error('Path is empty')
     }
     this.log(`Parsing path: ${path}`)
-    const regex = /^\/(?<namespace>ip[fn]s)\/(?<address>[^/$]+)(?<relativePath>[^$]*)/
-    const result = path.match(regex)
+    const result = path.match(this.PARSE_PATH_REGEX)
     if (result == null || result?.groups == null) {
       this.log(`Error parsing path: ${path}:`, result)
       throw new Error(`Path: ${path} is not valid, provide path as /ipfs/<cid> or /ipns/<path>`)

@@ -20,6 +20,7 @@ interface RouteHandler {
 export class HeliaServer {
   private heliaFetch!: HeliaFetch
   private heliaVersionInfo!: { Version: string, Commit: string }
+  private readonly HOST_PART_REGEX = /^(?<address>.+)\.(?<namespace>ip[fn]s)\..+$/
   private readonly log: debug.Debugger
   public isReady: Promise<void>
   public routes: RouteEntry[]
@@ -81,8 +82,7 @@ export class HeliaServer {
    * Parses the host into its parts.
    */
   private parseHostParts (host: string): { address: string, namespace: string } {
-    const hostPartsRegex = /^(?<address>.+)\.(?<namespace>ip[fn]s)\..+$/
-    const result = host.match(hostPartsRegex)
+    const result = host.match(this.HOST_PART_REGEX)
     if (result == null || result?.groups == null) {
       this.log(`Error parsing path: ${host}:`, result)
       throw new Error(`Subdomain: ${host} is not valid`)
