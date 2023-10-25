@@ -2,7 +2,7 @@ import debug from 'debug'
 import Fastify from 'fastify'
 import metricsPlugin from 'fastify-metrics'
 import { HOST, PORT } from './constants.js'
-import { HeliaServer, type IRouteEntry } from './heliaServer.js'
+import { HeliaServer, type RouteEntry } from './heliaServer.js'
 
 const logger = debug('helia-http-gateway')
 
@@ -13,7 +13,7 @@ await heliaServer.isReady
 const app = Fastify({ logger })
 await app.register(metricsPlugin.default, { endpoint: '/metrics' })
 
-heliaServer.routes.forEach(({ path, type, handler }: IRouteEntry) => {
+heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
   app.route({
     method: type,
     url: path,

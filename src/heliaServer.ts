@@ -6,13 +6,13 @@ import type debug from 'debug'
 
 const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.com/repos/ipfs/helia/git/ref/tags/helia-v${version}`
 
-export interface IRouteEntry {
+export interface RouteEntry {
   path: string
   type: 'GET' | 'POST'
   handler: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
 }
 
-interface IRouteHandler {
+interface RouteHandler {
   request: FastifyRequest
   reply: FastifyReply
 }
@@ -22,7 +22,7 @@ export class HeliaServer {
   private heliaVersionInfo!: { Version: string, Commit: string }
   private readonly log: debug.Debugger
   public isReady: Promise<void>
-  public routes: IRouteEntry[]
+  public routes: RouteEntry[]
 
   constructor (logger: debug.Debugger) {
     this.log = logger.extend('fastify')
@@ -66,7 +66,7 @@ export class HeliaServer {
   /**
    * Redirects to the subdomain gateway.
    */
-  private async redirectToSubdomainGW ({ request, reply }: IRouteHandler): Promise<void> {
+  private async redirectToSubdomainGW ({ request, reply }: RouteHandler): Promise<void> {
     const { namespace, address, relativePath } = this.heliaFetch.parsePath(request.url)
     const finalUrl = `//${address}.${namespace}.${request.hostname}${relativePath}`
     this.log('Redirecting to final URL:', finalUrl)
@@ -89,7 +89,7 @@ export class HeliaServer {
   /**
    * Fetches a path, which basically queries delegated routing API and then fetches the path from helia.
    */
-  async fetch ({ request, reply }: IRouteHandler): Promise<void> {
+  async fetch ({ request, reply }: RouteHandler): Promise<void> {
     try {
       await this.isReady
       this.log('Requesting content from helia:', request.url)
@@ -119,7 +119,7 @@ export class HeliaServer {
   /**
    * Get the helia version
    */
-  async heliaVersion ({ reply }: IRouteHandler): Promise<void> {
+  async heliaVersion ({ reply }: RouteHandler): Promise<void> {
     await this.isReady
 
     try {
@@ -147,7 +147,7 @@ export class HeliaServer {
   /**
    * GC the node
    */
-  async gc ({ reply }: IRouteHandler): Promise<void> {
+  async gc ({ reply }: RouteHandler): Promise<void> {
     await this.isReady
     this.log('GCing node')
     await this.heliaFetch.node?.gc()

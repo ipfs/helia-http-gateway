@@ -15,7 +15,7 @@ const ROOT_FILE_PATTERNS = [
 
 const DELEGATED_ROUTING_API = 'https://node3.delegate.ipfs.io/api/v0/name/resolve/'
 
-interface IHeliaPathParts {
+interface HeliaPathParts {
   namespace: string
   address: string
   relativePath: string
@@ -79,7 +79,7 @@ export class HeliaFetch {
   /**
    * Parse a path into its namespace, address, and relative path
    */
-  public parsePath (path: string): IHeliaPathParts {
+  public parsePath (path: string): HeliaPathParts {
     if (path === undefined) {
       throw new Error('Path is empty')
     }
@@ -91,7 +91,7 @@ export class HeliaFetch {
       throw new Error(`Path: ${path} is not valid, provide path as /ipfs/<cid> or /ipns/<path>`)
     }
     this.log('Parsed path:', result?.groups)
-    return result.groups as unknown as IHeliaPathParts
+    return result.groups as unknown as HeliaPathParts
   }
 
   /**
@@ -104,7 +104,7 @@ export class HeliaFetch {
   /**
    * fetch a path from a given namespace and address.
    */
-  public async fetch ({ namespace, address, relativePath }: IHeliaPathParts): Promise<AsyncIterable<Uint8Array>> {
+  public async fetch ({ namespace, address, relativePath }: HeliaPathParts): Promise<AsyncIterable<Uint8Array>> {
     try {
       await this.ready
       this.log('Processing Fetch:', { namespace, address, relativePath })
