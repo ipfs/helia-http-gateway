@@ -1,4 +1,5 @@
 import { type FastifyReply, type FastifyRequest } from 'fastify'
+import { CID } from 'multiformats'
 import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
 import { getCustomHelia } from './getCustomHelia.js'
 import { HeliaFetch } from './heliaFetch.js'
@@ -21,6 +22,7 @@ export class HeliaServer {
   private heliaFetch!: HeliaFetch
   private heliaVersionInfo!: { Version: string, Commit: string }
   private readonly HOST_PART_REGEX = /^(?<address>.+)\.(?<namespace>ip[fn]s)\..+$/
+  private readonly HAS_UPPERCASE_REGEX = /[A-Z]/
   private readonly log: debug.Debugger
   public isReady: Promise<void>
   public routes: RouteEntry[]
@@ -73,7 +75,11 @@ export class HeliaServer {
    */
   private async redirectToSubdomainGW ({ request, reply }: RouteHandler): Promise<void> {
     const { namespace, address, relativePath } = this.heliaFetch.parsePath(request.url)
-    const finalUrl = `//${address}.${namespace}.${request.hostname}${relativePath}`
+    let cidv1Address: string | null = null
+    if (this.HAS_UPPERCASE_REGEX.test(address)) {
+      cidv1Address = CID.parse(address).toV1().toString()
+    }
+    const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}${relativePath}`
     this.log('Redirecting to final URL:', finalUrl)
     await reply.redirect(finalUrl)
   }
