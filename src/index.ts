@@ -1,30 +1,72 @@
 import debug from 'debug'
-import express from 'express'
-import promBundle from 'express-prom-bundle'
-import { HeliaServer, type IRouteEntry } from './heliaServer.js'
+import Fastify from 'fastify'
+import metricsPlugin from 'fastify-metrics'
+import { DEBUG, HOST, PORT, METRICS } from './constants.js'
+import { HeliaServer, type RouteEntry } from './heliaServer.js'
 
-const logger = debug('helia-server')
-const app = express()
-const promMetricsMiddleware = promBundle({ includeMethod: true })
-
-// Constants
-const PORT = (process?.env?.PORT ?? 8080) as number
-const HOST = process?.env?.HOST ?? '0.0.0.0'
-
-// Add the prometheus middleware
-app.use(promMetricsMiddleware)
+const logger = debug('helia-http-gateway')
 
 const heliaServer = new HeliaServer(logger)
 await heliaServer.isReady
 
-// Add the routes
-app.get('/', (req, res) => {
-  res.send('Helia Docker, to fetch a page, call `/ipns/<path>` or `/ipfs/<cid>`')
+// Add the prometheus middleware
+const app = Fastify({
+  logger: {
+    enabled: DEBUG !== '',
+    msgPrefix: 'helia-http-gateway:fastify',
+    level: 'info',
+    transport: {
+      target: 'pino-pretty'
+    }
+  }
 })
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
-heliaServer.routes.map(({ type, path, handler }: IRouteEntry) => app[type](path, handler))
 
-app.listen(PORT, HOST, () => {
+if (METRICS === 'true') {
+  await app.register(metricsPlugin.default, { endpoint: '/metrics' })
+}
+
+heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
+  app.route({
+    method: type,
+    url: path,
+    handler
+  })
+})
+
+await app.listen({ port: PORT, host: HOST })
+
+const stopWebServer = async (): Promise<void> => {
+  try {
+    await app.close()
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(error)
+    process.exit(1)
+  }
   // eslint-disable-next-line no-console
-  console.log(`Server listening on http://${HOST}:${PORT}`)
+  console.log('Closed out remaining webServer connections.')
+}
+
+let shutdownRequested = false
+async function closeGracefully (signal: number): Promise<void> {
+  // eslint-disable-next-line no-console
+  console.log(`Received signal to terminate: ${signal}`)
+  if (shutdownRequested) {
+    // eslint-disable-next-line no-console
+    console.log('closeGracefully: shutdown already requested, exiting callback.')
+    return
+  }
+  shutdownRequested = true
+
+  await Promise.all([heliaServer.stop().then(() => {
+    // eslint-disable-next-line no-console
+    console.log('Stopped Helia.')
+  }), stopWebServer()])
+
+  process.kill(process.pid, signal)
+}
+
+['SIGHUP', 'SIGINT', 'SIGTERM', 'beforeExit'].forEach((signal: string) => {
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
+  process.once(signal, closeGracefully)
 })
