@@ -66,6 +66,13 @@ export class HeliaServer {
         path: '/*',
         type: 'GET',
         handler: async (request, reply): Promise<void> => this.fetch({ request, reply })
+      },
+      {
+        path: '/',
+        type: 'GET',
+        handler: async (request, reply): Promise<void> => {
+          await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
+        }
       }
     ]
   }
