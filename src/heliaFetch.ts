@@ -28,7 +28,7 @@ export class HeliaFetch {
   private fs!: UnixFS
   private readonly delegatedRoutingApi: string
   private readonly log: debug.Debugger
-  private readonly PARSE_PATH_REGEX = /^\/(?<namespace>ip[fn]s)\/(?<address>[^/$]+)(?<relativePath>[^$]*)/
+  private readonly PARSE_PATH_REGEX = /^\/(?<namespace>ip[fn]s)\/(?<address>[^/$]+)(?<relativePath>[^$^?]*)/
   private readonly rootFilePatterns: string[]
   public node!: Helia
   public ready: Promise<void>
