@@ -4,8 +4,9 @@ import { createHelia, type Helia, type HeliaInit } from 'helia'
 import { bitswap, trustlessGateway } from 'helia/block-brokers'
 import { USE_LIBP2P, FILE_BLOCKSTORE_PATH, FILE_DATASTORE_PATH, TRUSTLESS_GATEWAYS, USE_BITSWAP, USE_TRUSTLESS_GATEWAYS } from './constants.js'
 import type { Libp2p } from '@libp2p/interface'
+import type { PubSub } from '@libp2p/interface/pubsub'
 
-export async function getCustomHelia (): Promise<Helia> {
+export async function getCustomHelia (): Promise<Helia<Libp2p<{ pubsub: PubSub }>>> {
   const config: Partial<HeliaInit<Libp2p<any>>> = {
     blockBrokers: []
   }

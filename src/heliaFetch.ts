@@ -67,15 +67,14 @@ export class HeliaFetch {
    * Initialize the HeliaFetch instance
    */
   async init (): Promise<void> {
-    this.node = this.node ?? await createHelia({
-      blockstore: new MemoryBlockstore(),
-      datastore: new MemoryDatastore()
-    })
+    const blockstore = new MemoryBlockstore()
+    const datastore = new MemoryDatastore()
+    this.node = this.node ?? await createHelia({ blockstore, datastore })
     this.ipns = ipns(this.node, [
       dht(this.node),
       pubsub(this.node)
     ])
-    this.fs = unixfs(this.node)
+    this.fs = unixfs({ blockstore })
     this.log('Helia Setup Complete!')
   }
 
@@ -120,7 +119,7 @@ export class HeliaFetch {
       }
     } catch (error) {
       // eslint-disable-next-line no-console
-      this.log(`Error fetching: ${namespace}/${address}${relativePath}`, error)
+      this.log(`Error fetching: /${namespace}/${address}${relativePath}`, error)
       throw error
     }
   }
@@ -135,7 +134,7 @@ export class HeliaFetch {
       return await this.fetch({ namespace, address, relativePath })
     } catch (error) {
       // eslint-disable-next-line no-console
-      this.log(`Error fetching: ${path}`, error)
+      this.log(`Error fetching path: ${path}`, error)
       throw error
     }
   }
@@ -144,8 +143,8 @@ export class HeliaFetch {
    * Fetch from IPFS
    */
   private async fetchIpfs (...[cid, options]: Parameters<UnixFS['cat']>): Promise<AsyncIterable<Uint8Array>> {
+    this.log('Fetching from IPFS:', { cid, options })
     const { type } = await this.fs.stat(cid, options)
-    this.log('Fetching from IPFS:', { cid, type, options })
     switch (type) {
       case 'directory':
         return this.getDirectoryResponse(cid, options)
@@ -164,7 +163,8 @@ export class HeliaFetch {
     if (!this.ipnsResolutionCache.has(address)) {
       this.log('Fetching from Delegate Routing:', address)
       const cid = await this.ipns.resolveDns(address)
-      this.ipnsResolutionCache.set(address, cid.toString() ?? 'not-found')
+      this.log('Resolved IPNS address:', { address, cid })
+      this.ipnsResolutionCache.set(address, `/ipfs/${cid.toString()}` ?? 'not-found')
     }
     if (this.ipnsResolutionCache.get(address) === 'not-found') {
       this.log('No Path found:', address)
