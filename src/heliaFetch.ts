@@ -157,7 +157,9 @@ export class HeliaFetch {
   private async fetchIpns (address: string, options?: Parameters<UnixFS['cat']>[1]): Promise<AsyncIterable<Uint8Array>> {
     if (!this.ipnsResolutionCache.has(address)) {
       this.log('Fetching from DNS over HTTP:', address)
-      const path = (await this.dohResolver.resolveTxt(`_dnslink.${address}`)).flat()[0].replace('dnslink=', '')
+      const txtRecords = await this.dohResolver.resolveTxt(`_dnslink.${address}`)
+      const pathEntry = txtRecords.find(([record]) => record.startsWith('dnslink='))
+      const path = pathEntry?.[0].replace('dnslink=', '')
       this.log('Got Path from DNS over HTTP:', path)
       this.ipnsResolutionCache.set(address, path ?? 'not-found')
     }
