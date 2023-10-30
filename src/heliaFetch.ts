@@ -2,6 +2,7 @@ import { unixfs, type UnixFS } from '@helia/unixfs'
 import { MemoryBlockstore } from 'blockstore-core'
 import { MemoryDatastore } from 'datastore-core'
 import debug from 'debug'
+import DOHResolver from 'dns-over-http-resolver'
 import { createHelia, type Helia } from 'helia'
 import { LRUCache } from 'lru-cache'
 import { CID } from 'multiformats/cid'
@@ -13,8 +14,6 @@ const ROOT_FILE_PATTERNS = [
   'index.shtml'
 ]
 
-const DELEGATED_ROUTING_API = 'https://node3.delegate.ipfs.io/api/v0/name/resolve/'
-
 interface HeliaPathParts {
   namespace: string
   address: string
@@ -25,8 +24,8 @@ interface HeliaPathParts {
  * Fetches files from IPFS or IPNS
  */
 export class HeliaFetch {
+  private readonly dohResolver = new DOHResolver()
   private fs!: UnixFS
-  private readonly delegatedRoutingApi: string
   private readonly log: debug.Debugger
   private readonly PARSE_PATH_REGEX = /^\/(?<namespace>ip[fn]s)\/(?<address>[^/$]+)(?<relativePath>[^$^?]*)/
   private readonly rootFilePatterns: string[]
@@ -40,12 +39,10 @@ export class HeliaFetch {
   constructor ({
     node,
     rootFilePatterns = ROOT_FILE_PATTERNS,
-    delegatedRoutingApi = DELEGATED_ROUTING_API,
     logger
   }: {
     node?: Helia
     rootFilePatterns?: string[]
-    delegatedRoutingApi?: string
     logger?: debug.Debugger
   } = {}) {
     // setup a logger
@@ -59,7 +56,6 @@ export class HeliaFetch {
       this.node = node
     }
     this.rootFilePatterns = rootFilePatterns
-    this.delegatedRoutingApi = delegatedRoutingApi
     this.ready = this.init()
     this.log('Initialized')
   }
@@ -160,9 +156,12 @@ export class HeliaFetch {
    */
   private async fetchIpns (address: string, options?: Parameters<UnixFS['cat']>[1]): Promise<AsyncIterable<Uint8Array>> {
     if (!this.ipnsResolutionCache.has(address)) {
-      this.log('Fetching from Delegate Routing:', address)
-      const { Path } = await (await fetch(this.delegatedRoutingApi + address)).json()
-      this.ipnsResolutionCache.set(address, Path ?? 'not-found')
+      this.log('Fetching from DNS over HTTP:', address)
+      const txtRecords = await this.dohResolver.resolveTxt(`_dnslink.${address}`)
+      const pathEntry = txtRecords.find(([record]) => record.startsWith('dnslink='))
+      const path = pathEntry?.[0].replace('dnslink=', '')
+      this.log('Got Path from DNS over HTTP:', path)
+      this.ipnsResolutionCache.set(address, path ?? 'not-found')
     }
     if (this.ipnsResolutionCache.get(address) === 'not-found') {
       this.log('No Path found:', address)

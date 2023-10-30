@@ -60,6 +60,7 @@
     "@helia/unixfs": "1.x",
     "blockstore-level": "^1.1.4",
     "datastore-level": "^10.1.4",
+    "dns-over-http-resolver": "2.1.3",
     "fastify": "4.24.3",
     "fastify-metrics": "10.3.2",
     "file-type": "18.x",
