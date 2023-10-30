@@ -109,7 +109,7 @@ export class HeliaServer {
     }
     const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}${relativePath}`
     this.log('Redirecting to final URL:', finalUrl)
-    await reply.redirect(finalUrl).send()
+    await reply.redirect(finalUrl)
   }
 
   /**
