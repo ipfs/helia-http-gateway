@@ -81,17 +81,7 @@ export class HeliaServer {
     }
     const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}${relativePath}`
     this.log('Redirecting to final URL:', finalUrl)
-    // in an ideal world we would just redirect to the final URL, but to make this compatible with
-    // tiros, just send the content with a 301. It's also faster
-    return this.fetch({
-      request: {
-        ...request,
-        url: relativePath,
-        hostname: `${cidv1Address ?? address}.${namespace}.${request.hostname}`
-      },
-      reply,
-      overrideResponseCode: 301
-    })
+    await reply.redirect(301, finalUrl)
   }
 
   /**
@@ -108,7 +98,7 @@ export class HeliaServer {
   /**
    * Fetches a path, which basically queries delegated routing API and then fetches the path from helia.
    */
-  async fetch ({ request, reply, overrideResponseCode = 200 }: RouteHandler & { overrideResponseCode?: number }): Promise<void> {
+  async fetch ({ request, reply }: RouteHandler): Promise<void> {
     try {
       await this.isReady
       this.log('Requesting content from helia:', request.url)
@@ -124,11 +114,9 @@ export class HeliaServer {
         if (type === undefined) {
           type = await parseContentType({ bytes: chunk, path: relativePath })
           // this needs to happen first.
-          reply.raw.writeHead(overrideResponseCode, {
+          reply.raw.writeHead(200, {
             'Content-Type': type ?? DEFAULT_MIME_TYPE,
-            ...(overrideResponseCode === 200
-              ? { 'Cache-Control': 'public, max-age=31536000, immutable' }
-              : { location: `${request.hostname}${request.url}` })
+            'Cache-Control': 'public, max-age=31536000, immutable'
           })
         }
         reply.raw.write(Buffer.from(chunk))
