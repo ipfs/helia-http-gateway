@@ -99,11 +99,10 @@ export class HeliaServer {
    */
   private parseHostParts (host: string): { address: string, namespace: string } {
     const result = host.match(this.HOST_PART_REGEX)
-    if (result == null || result?.groups == null) {
-      this.log(`Error parsing path: ${host}:`, result)
-      throw new Error(`Subdomain: ${host} is not valid`)
+    return {
+      address: result?.groups?.address ?? '',
+      namespace: result?.groups?.namespace ?? ''
     }
-    return result.groups as { address: string, namespace: string }
   }
 
   /**
@@ -115,7 +114,7 @@ export class HeliaServer {
       this.log('Requesting content from helia:', request.url)
       let type: string | undefined
       const { address, namespace } = this.parseHostParts(request.hostname)
-      if (address == null || namespace == null) {
+      if (address === '' || namespace === '') {
         return await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
       }
       const { url: relativePath } = request
