@@ -66,13 +66,6 @@ export class HeliaServer {
         path: '/*',
         type: 'GET',
         handler: async (request, reply): Promise<void> => this.fetch({ request, reply })
-      },
-      {
-        path: '/',
-        type: 'GET',
-        handler: async (request, reply): Promise<void> => {
-          await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
-        }
       }
     ]
   }
@@ -88,7 +81,17 @@ export class HeliaServer {
     }
     const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}${relativePath}`
     this.log('Redirecting to final URL:', finalUrl)
-    await reply.redirect(finalUrl)
+    // in an ideal world we would just redirect to the final URL, but to make this compatible with
+    // tiros, just send the content with a 301. It's also faster
+    return this.fetch({
+      request: {
+        ...request,
+        url: relativePath,
+        hostname: `${cidv1Address ?? address}.${namespace}.${request.hostname}`
+      },
+      reply,
+      overrideResponseCode: 301
+    })
   }
 
   /**
@@ -106,12 +109,15 @@ export class HeliaServer {
   /**
    * Fetches a path, which basically queries delegated routing API and then fetches the path from helia.
    */
-  async fetch ({ request, reply }: RouteHandler): Promise<void> {
+  async fetch ({ request, reply, overrideResponseCode = 200 }: RouteHandler & { overrideResponseCode?: number }): Promise<void> {
     try {
       await this.isReady
       this.log('Requesting content from helia:', request.url)
       let type: string | undefined
       const { address, namespace } = this.parseHostParts(request.hostname)
+      if (address == null || namespace == null) {
+        return await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
+      }
       const { url: relativePath } = request
       this.log('Fetching from Helia:', { address, namespace, relativePath })
       // raw response is needed to respond with the correct content type.
@@ -119,9 +125,11 @@ export class HeliaServer {
         if (type === undefined) {
           type = await parseContentType({ bytes: chunk, path: relativePath })
           // this needs to happen first.
-          reply.raw.writeHead(200, {
+          reply.raw.writeHead(overrideResponseCode, {
             'Content-Type': type ?? DEFAULT_MIME_TYPE,
-            'Cache-Control': 'public, max-age=31536000, immutable'
+            ...(overrideResponseCode === 200
+              ? { 'Cache-Control': 'public, max-age=31536000, immutable' }
+              : { location: `${request.hostname}${request.url}}` })
           })
         }
         reply.raw.write(Buffer.from(chunk))
