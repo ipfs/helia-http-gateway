@@ -11,6 +11,9 @@ export interface RouteEntry {
   path: string
   type: 'GET' | 'POST'
   handler: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+  constraints: {
+    subdomain: boolean
+  }
 }
 
 interface RouteHandler {
@@ -49,29 +52,47 @@ export class HeliaServer {
       {
         path: '/:ns(ipfs|ipns)/*',
         type: 'GET',
-        handler: async (request, reply): Promise<void> => this.redirectToSubdomainGW({ request, reply })
+        handler: async (request, reply): Promise<void> => this.redirectToSubdomainGW({ request, reply }),
+        constraints: {
+          subdomain: false
+        }
       }, {
         path: '/api/v0/version',
         type: 'POST',
-        handler: async (request, reply): Promise<void> => this.heliaVersion({ request, reply })
+        handler: async (request, reply): Promise<void> => this.heliaVersion({ request, reply }),
+        constraints: {
+          subdomain: false
+        }
       }, {
         path: '/api/v0/version',
         type: 'GET',
-        handler: async (request, reply): Promise<void> => this.heliaVersion({ request, reply })
+        handler: async (request, reply): Promise<void> => this.heliaVersion({ request, reply }),
+        constraints: {
+          subdomain: false
+        }
       }, {
         path: '/api/v0/repo/gc',
         type: 'POST',
-        handler: async (request, reply): Promise<void> => this.gc({ request, reply })
+        handler: async (request, reply): Promise<void> => this.gc({ request, reply }),
+        constraints: {
+          subdomain: false
+        }
       }, {
         path: '/*',
         type: 'GET',
-        handler: async (request, reply): Promise<void> => this.fetch({ request, reply })
+        handler: async (request, reply): Promise<void> => this.fetch({ request, reply }),
+        constraints: {
+          subdomain: true
+        }
       },
       {
         path: '/',
         type: 'GET',
         handler: async (request, reply): Promise<void> => {
           await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
+        },
+        constraints: {
+          subdomain: false
         }
       }
     ]
@@ -88,7 +109,7 @@ export class HeliaServer {
     }
     const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}${relativePath}`
     this.log('Redirecting to final URL:', finalUrl)
-    await reply.redirect(finalUrl)
+    await reply.redirect(finalUrl).send()
   }
 
   /**

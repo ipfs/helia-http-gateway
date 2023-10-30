@@ -2,6 +2,7 @@ import debug from 'debug'
 import Fastify from 'fastify'
 import metricsPlugin from 'fastify-metrics'
 import { DEBUG, HOST, PORT, METRICS } from './constants.js'
+import { subdomainStrategy } from './fastifyConstraintStrategies/subdomainStrategy.js'
 import { HeliaServer, type RouteEntry } from './heliaServer.js'
 
 const logger = debug('helia-http-gateway')
@@ -21,15 +22,18 @@ const app = Fastify({
   }
 })
 
+app.addConstraintStrategy(subdomainStrategy)
+
 if (METRICS === 'true') {
   await app.register(metricsPlugin.default, { endpoint: '/metrics' })
 }
 
-heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
+heliaServer.routes.forEach(({ path, type, handler, constraints }: RouteEntry) => {
   app.route({
     method: type,
     url: path,
-    handler
+    handler,
+    constraints
   })
 })
 
