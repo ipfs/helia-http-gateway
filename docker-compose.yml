@@ -1,7 +1,8 @@
 version: "3.8"
+name: helia
 
 services:
-  helia-http-gateway:
+  http-gateway:
     build: .
     restart: always
     ports:
