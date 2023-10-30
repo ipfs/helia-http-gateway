@@ -21,6 +21,8 @@ const app = Fastify({
   }
 })
 
+app.server.keepAliveTimeout = 5 * 60 * 1000 // 5 minutes
+
 if (METRICS === 'true') {
   await app.register(metricsPlugin.default, { endpoint: '/metrics' })
 }

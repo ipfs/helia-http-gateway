@@ -79,7 +79,7 @@ export class HeliaServer {
     if (this.HAS_UPPERCASE_REGEX.test(address)) {
       cidv1Address = CID.parse(address).toV1().toString()
     }
-    const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}${relativePath}`
+    const finalUrl = `${request.protocol}://${cidv1Address ?? address}.${namespace}.${request.hostname}${relativePath}`
     this.log('Redirecting to final URL:', finalUrl)
     await reply.redirect(301, finalUrl)
   }
