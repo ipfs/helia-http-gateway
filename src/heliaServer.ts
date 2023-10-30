@@ -128,7 +128,7 @@ export class HeliaServer {
             'Content-Type': type ?? DEFAULT_MIME_TYPE,
             ...(overrideResponseCode === 200
               ? { 'Cache-Control': 'public, max-age=31536000, immutable' }
-              : { location: `${request.hostname}${request.url}}` })
+              : { location: `${request.hostname}${request.url}` })
           })
         }
         reply.raw.write(Buffer.from(chunk))
