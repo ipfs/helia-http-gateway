@@ -108,7 +108,6 @@ export class HeliaServer {
       return this.fetchWithoutSubdomain({ request, reply })
     }
     const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
-    // this.heliaFetch.parsePath(request.url)
     let cidv1Address: string | null = null
     if (this.HAS_UPPERCASE_REGEX.test(address)) {
       cidv1Address = CID.parse(address).toV1().toString()
