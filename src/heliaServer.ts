@@ -1,5 +1,6 @@
-import { type FastifyReply, type FastifyRequest } from 'fastify'
+import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { CID } from 'multiformats'
+import { USE_SUBDOMAINS } from './constants.js'
 import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
 import { getCustomHelia } from './getCustomHelia.js'
 import { HeliaFetch } from './heliaFetch.js'
@@ -7,15 +8,27 @@ import type debug from 'debug'
 
 const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.com/repos/ipfs/helia/git/ref/tags/helia-v${version}`
 
-export interface RouteEntry {
+export interface RouteEntry<T extends RouteGenericInterface = RouteGenericInterface> {
   path: string
   type: 'GET' | 'POST'
-  handler: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
+  handler: (request: FastifyRequest<T>, reply: FastifyReply) => Promise<void>
 }
 
-interface RouteHandler {
-  request: FastifyRequest
+interface RouteHandler<T extends RouteGenericInterface = RouteGenericInterface> {
+  request: FastifyRequest<T>
   reply: FastifyReply
+}
+
+interface EntryParams {
+  ns: string
+  address: string
+  '*': string
+}
+
+interface ParsedEntryParams {
+  address: string
+  namespace: string
+  relativePath: string
 }
 
 export class HeliaServer {
@@ -47,10 +60,17 @@ export class HeliaServer {
     console.log('Helia Started!')
     this.routes = [
       {
-        path: '/:ns(ipfs|ipns)/*',
+        // without this non-wildcard postfixed path, the '/*' route will match first.
+        path: '/:ns(ipfs|ipns)/:address', // ipns/dnsLink or ipfs/cid
         type: 'GET',
-        handler: async (request, reply): Promise<void> => this.redirectToSubdomainGW({ request, reply })
-      }, {
+        handler: async (request, reply): Promise<void> => this.handleEntry({ request, reply })
+      },
+      {
+        path: '/:ns(ipfs|ipns)/:address/*', // ipns/dnsLink/relativePath or ipfs/cid/relativePath
+        type: 'GET',
+        handler: async (request, reply): Promise<void> => this.handleEntry({ request, reply })
+      },
+      {
         path: '/api/v0/version',
         type: 'POST',
         handler: async (request, reply): Promise<void> => this.heliaVersion({ request, reply })
@@ -71,6 +91,9 @@ export class HeliaServer {
         path: '/',
         type: 'GET',
         handler: async (request, reply): Promise<void> => {
+          if (USE_SUBDOMAINS && request.hostname.split('.').length > 1) {
+            return this.fetch({ request, reply })
+          }
           await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
         }
       }
@@ -80,13 +103,16 @@ export class HeliaServer {
   /**
    * Redirects to the subdomain gateway.
    */
-  private async redirectToSubdomainGW ({ request, reply }: RouteHandler): Promise<void> {
-    const { namespace, address, relativePath } = this.heliaFetch.parsePath(request.url)
+  private async handleEntry ({ request, reply }: RouteHandler): Promise<void> {
+    if (!USE_SUBDOMAINS) {
+      return this.fetchWithoutSubdomain({ request, reply })
+    }
+    const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
     let cidv1Address: string | null = null
     if (this.HAS_UPPERCASE_REGEX.test(address)) {
       cidv1Address = CID.parse(address).toV1().toString()
     }
-    const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}${relativePath}`
+    const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}${relativePath ?? ''}`
     this.log('Redirecting to final URL:', finalUrl)
     await reply.redirect(finalUrl)
   }
@@ -103,30 +129,45 @@ export class HeliaServer {
     return result.groups as { address: string, namespace: string }
   }
 
+  async fetchWithoutSubdomain ({ request, reply }: RouteHandler): Promise<void> {
+    const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
+    try {
+      await this.isReady
+      await this._fetch({ request, reply, address, namespace, relativePath })
+    } catch (error) {
+      this.log('Error requesting content from helia:', error)
+      await reply.code(500).send(error)
+    }
+  }
+
+  async _fetch ({ reply, address, namespace, relativePath }: RouteHandler & ParsedEntryParams): Promise<void> {
+    this.log('Fetching from Helia:', { address, namespace, relativePath })
+    let type: string | undefined
+    // raw response is needed to respond with the correct content type.
+    for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath })) {
+      if (type === undefined) {
+        type = await parseContentType({ bytes: chunk, path: relativePath })
+        // this needs to happen first.
+        reply.raw.writeHead(200, {
+          'Content-Type': type ?? DEFAULT_MIME_TYPE,
+          'Cache-Control': 'public, max-age=31536000, immutable'
+        })
+      }
+      reply.raw.write(Buffer.from(chunk))
+    }
+    reply.raw.end()
+  }
+
   /**
-   * Fetches a path, which basically queries delegated routing API and then fetches the path from helia.
+   * Fetches a content for a subdomain, which basically queries delegated routing API and then fetches the path from helia.
    */
   async fetch ({ request, reply }: RouteHandler): Promise<void> {
     try {
       await this.isReady
       this.log('Requesting content from helia:', request.url)
-      let type: string | undefined
       const { address, namespace } = this.parseHostParts(request.hostname)
       const { url: relativePath } = request
-      this.log('Fetching from Helia:', { address, namespace, relativePath })
-      // raw response is needed to respond with the correct content type.
-      for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath })) {
-        if (type === undefined) {
-          type = await parseContentType({ bytes: chunk, path: relativePath })
-          // this needs to happen first.
-          reply.raw.writeHead(200, {
-            'Content-Type': type ?? DEFAULT_MIME_TYPE,
-            'Cache-Control': 'public, max-age=31536000, immutable'
-          })
-        }
-        reply.raw.write(Buffer.from(chunk))
-      }
-      reply.raw.end()
+      await this._fetch({ request, reply, address, namespace, relativePath })
     } catch (error) {
       this.log('Error requesting content from helia:', error)
       await reply.code(500).send(error)

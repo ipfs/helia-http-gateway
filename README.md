@@ -38,6 +38,7 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway" helia
 | `DEBUG` | Debug level | `''`|
 | `PORT` | Port to listen on | `8080` |
 | `HOST` | Host to listen on | `0.0.0.0` |
+| `USE_SUBDOMAINS` | Whether to use [origin isolation](https://docs.ipfs.tech/how-to/gateway-best-practices/#use-subdomain-gateway-resolution-for-origin-isolation) | `false` |
 | `METRICS` | Whether to enable prometheus metrics. Any value other than 'true' will disable metrics. | `true` |
 | `USE_BITSWAP` | Use bitswap to fetch content from IPFS | `true` |
 | `USE_TRUSTLESS_GATEWAYS` | Whether to fetch content from trustless-gateways or not | `true` |

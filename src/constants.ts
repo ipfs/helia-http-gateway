@@ -4,6 +4,8 @@ export const HOST = process.env.HOST ?? '0.0.0.0'
 
 export const DEBUG = process.env.DEBUG ?? ''
 
+export const USE_SUBDOMAINS = process.env.USE_SUBDOMAINS === 'true'
+
 /**
  * If set to any value other than 'true', we will disable prometheus metrics.
  *
