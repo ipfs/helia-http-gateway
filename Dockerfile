@@ -15,7 +15,7 @@ RUN npm run build
 
 RUN npm prune --omit=dev
 
-FROM node:20-slim as app
+FROM --platform=$BUILDPLATFORM node:20-slim as app
 ENV NODE_ENV production
 WORKDIR /app
 # built src without dev dependencies

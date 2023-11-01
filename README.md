@@ -16,19 +16,19 @@ $ docker-compose up
 
 ### Build
 ```sh
-$ docker build . --tag helia
+$ docker build . --tag helia-http-gateway:local
 ```
 
 Pass the explicit platform when building on a Mac.
 
 ```sh
-$ docker build . --tag helia --platform linux/arm64
+$ docker build . --platform linux/arm64 --tag helia-http-gateway:local-arm64
 ```
 
 ### Running
 
 ```sh
-$ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway" helia
+$ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:local # or helia-http-gateway:local-arm64
 ```
 
 ## Supported Environment Variables
