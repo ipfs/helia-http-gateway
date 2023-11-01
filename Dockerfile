@@ -27,6 +27,8 @@ COPY --from=builder /usr/bin/tini /usr/bin/tini
 COPY --from=builder /usr/lib/**/libcrypto* /usr/lib/
 COPY --from=builder /usr/lib/**/libssl* /usr/lib/
 
+EXPOSE 8080
+
 HEALTHCHECK --interval=12s --timeout=12s --start-period=10s CMD npm run healthcheck
 
 # Use tini to handle signals properly, see https://github.com/nodejs/docker-node/blob/main/docs/BestPractices.md#handling-kernel-signals
