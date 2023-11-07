@@ -11,7 +11,7 @@ const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.
 export interface RouteEntry<T extends RouteGenericInterface = RouteGenericInterface> {
   path: string
   type: 'GET' | 'POST'
-  handler: (request: FastifyRequest<T>, reply: FastifyReply) => Promise<void>
+  handler(request: FastifyRequest<T>, reply: FastifyReply): Promise<void>
 }
 
 interface RouteHandler<T extends RouteGenericInterface = RouteGenericInterface> {
@@ -41,7 +41,7 @@ export class HeliaServer {
   public routes: RouteEntry[]
 
   constructor (logger: debug.Debugger) {
-    this.log = logger.extend('fastify')
+    this.log = logger.extend('server')
     this.isReady = this.init()
     this.routes = []
     this.log('Initialized')

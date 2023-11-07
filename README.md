@@ -36,6 +36,7 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway" helia
 | Variable | Description | Default |
 | --- | --- | --- |
 | `DEBUG` | Debug level | `''`|
+| `FASTIFY_DEBUG` | Debug level for fastify's logger | `''`|
 | `PORT` | Port to listen on | `8080` |
 | `HOST` | Host to listen on | `0.0.0.0` |
 | `USE_SUBDOMAINS` | Whether to use [origin isolation](https://docs.ipfs.tech/how-to/gateway-best-practices/#use-subdomain-gateway-resolution-for-origin-isolation) | `false` |

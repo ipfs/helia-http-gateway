@@ -236,9 +236,9 @@ export class HeliaFetch {
       return async (): Promise<{ name: string, cid: CID }> => {
         try {
           const path = this.sanitizeUrlPath(`${directoryPath}/${file}`)
-          this.log('Trying to get root file:', { file, directoryPath })
+          this.log('Trying to get root file:', { file, path })
           const stats = await this.fs.stat(cid, { path })
-          this.log('Got root file:', { file, directoryPath, stats })
+          this.log('Got root file:', { file, path, stats })
           return {
             name: file,
             cid: stats.cid
