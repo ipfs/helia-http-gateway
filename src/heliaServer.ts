@@ -1,6 +1,6 @@
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { CID } from 'multiformats'
-import { USE_SUBDOMAINS } from './constants.js'
+import { USE_SUBDOMAINS, RESOLVE_REDIRECTS } from './constants.js'
 import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
 import { getCustomHelia } from './getCustomHelia.js'
 import { HeliaFetch } from './heliaFetch.js'
@@ -53,7 +53,10 @@ export class HeliaServer {
   async init (): Promise<void> {
     this.heliaFetch = new HeliaFetch({
       logger: this.log,
-      node: await getCustomHelia()
+      node: await getCustomHelia(),
+      config: {
+        resolveRedirects: RESOLVE_REDIRECTS
+      }
     })
     await this.heliaFetch.ready
     // eslint-disable-next-line no-console

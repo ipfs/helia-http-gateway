@@ -20,6 +20,10 @@ interface HeliaPathParts {
   relativePath: string
 }
 
+interface HeliaFetchConfig {
+  resolveRedirects: boolean
+}
+
 /**
  * Fetches files from IPFS or IPNS
  */
@@ -31,6 +35,7 @@ export class HeliaFetch {
   private readonly rootFilePatterns: string[]
   public node!: Helia
   public ready: Promise<void>
+  private readonly config: HeliaFetchConfig
   private readonly ipnsResolutionCache = new LRUCache<string, string>({
     max: 10000,
     ttl: 1000 * 60 * 60 * 24
@@ -39,11 +44,13 @@ export class HeliaFetch {
   constructor ({
     node,
     rootFilePatterns = ROOT_FILE_PATTERNS,
-    logger
+    logger,
+    config = {}
   }: {
     node?: Helia
     rootFilePatterns?: string[]
     logger?: debug.Debugger
+    config?: Partial<HeliaFetchConfig>
   } = {}) {
     // setup a logger
     if (logger !== undefined) {
@@ -54,6 +61,10 @@ export class HeliaFetch {
     // a node can be provided otherwise a new one will be created.
     if (node !== undefined) {
       this.node = node
+    }
+    this.config = {
+      resolveRedirects: true,
+      ...config
     }
     this.rootFilePatterns = rootFilePatterns
     this.ready = this.init()
@@ -152,16 +163,51 @@ export class HeliaFetch {
   }
 
   /**
+   * Checks if a redirect is needed and returns either the original address or the redirect address.
+   */
+  private async checkForRedirect (address: string, options?: Parameters<UnixFS['cat']>[1]): Promise<string> {
+    if (!this.config.resolveRedirects) {
+      return address
+    }
+    try {
+      this.log('Checking for redirect of:', address)
+      const redirectCheckResponse = await fetch(`http://${address}`, { method: 'HEAD', redirect: 'manual', ...options })
+      if ([301, 302, 307, 308].includes(redirectCheckResponse.status)) {
+        this.log('Redirect statuscode :', redirectCheckResponse.status)
+        const redirectText = redirectCheckResponse.headers.get('location')
+        if (redirectText == null) {
+          this.log('No location header')
+          return address
+        } else {
+          const redirectUrl = new URL(redirectText)
+          this.log('Redirect found:', redirectUrl.host)
+          return redirectUrl.host
+        }
+      }
+    } catch {
+      // ignore errors on redirect checks
+      this.log('Error checking for redirect for url')
+    }
+    return address
+  }
+
+  /**
    * Fetch IPNS content.
    */
   private async fetchIpns (address: string, options?: Parameters<UnixFS['cat']>[1]): Promise<AsyncIterable<Uint8Array>> {
     if (!this.ipnsResolutionCache.has(address)) {
       this.log('Fetching from DNS over HTTP:', address)
-      const txtRecords = await this.dohResolver.resolveTxt(`_dnslink.${address}`)
+      const redirectAddress = await this.checkForRedirect(address)
+      const txtRecords = await this.dohResolver.resolveTxt(`_dnslink.${redirectAddress}`)
       const pathEntry = txtRecords.find(([record]) => record.startsWith('dnslink='))
       const path = pathEntry?.[0].replace('dnslink=', '')
       this.log('Got Path from DNS over HTTP:', path)
       this.ipnsResolutionCache.set(address, path ?? 'not-found')
+      if (redirectAddress !== address) {
+        this.ipnsResolutionCache.set(redirectAddress, path ?? 'not-found')
+      }
+      // we don't do anything with this, but want to fail if it is not a valid path
+      this.parsePath(path ?? '')
     }
     if (this.ipnsResolutionCache.get(address) === 'not-found') {
       this.log('No Path found:', address)
