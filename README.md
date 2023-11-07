@@ -44,6 +44,7 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway" helia
 | `USE_TRUSTLESS_GATEWAYS` | Whether to fetch content from trustless-gateways or not | `true` |
 | `TRUSTLESS_GATEWAYS` | Comma separated list of trusted gateways to fetch content from | [Defined in Helia](https://github.com/ipfs/helia/blob/main/packages/helia/src/block-brokers/trustless-gateway/index.ts) |
 | `USE_LIBP2P` | Whether to use libp2p networking | `true` |
+| `RESOLVE_REDIRECTS` | Whether to resolve redirects before looking up dnslink entries | `true` |
 
 <!--
 TODO: currently broken when used in docker, but they work when running locally (you can cache datastore and blockstore locally to speed things up if you want)
