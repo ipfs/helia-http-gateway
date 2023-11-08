@@ -6,7 +6,7 @@ import DOHResolver from 'dns-over-http-resolver'
 import { createHelia, type Helia } from 'helia'
 import { LRUCache } from 'lru-cache'
 import { CID } from 'multiformats/cid'
-import pTryEach from 'p-try-each'
+import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
 
 const ROOT_FILE_PATTERNS = [
   'index.html',
@@ -20,6 +20,14 @@ interface HeliaPathParts {
   relativePath: string
 }
 
+interface HeliaFetchOptions extends HeliaPathParts {
+  signal?: AbortSignal
+}
+
+interface HeliaFetchConfig {
+  resolveRedirects: boolean
+}
+
 /**
  * Fetches files from IPFS or IPNS
  */
@@ -31,6 +39,7 @@ export class HeliaFetch {
   private readonly rootFilePatterns: string[]
   public node!: Helia
   public ready: Promise<void>
+  private readonly config: HeliaFetchConfig
   private readonly ipnsResolutionCache = new LRUCache<string, string>({
     max: 10000,
     ttl: 1000 * 60 * 60 * 24
@@ -39,11 +48,13 @@ export class HeliaFetch {
   constructor ({
     node,
     rootFilePatterns = ROOT_FILE_PATTERNS,
-    logger
+    logger,
+    config = {}
   }: {
     node?: Helia
     rootFilePatterns?: string[]
     logger?: debug.Debugger
+    config?: Partial<HeliaFetchConfig>
   } = {}) {
     // setup a logger
     if (logger !== undefined) {
@@ -54,6 +65,10 @@ export class HeliaFetch {
     // a node can be provided otherwise a new one will be created.
     if (node !== undefined) {
       this.node = node
+    }
+    this.config = {
+      resolveRedirects: true,
+      ...config
     }
     this.rootFilePatterns = rootFilePatterns
     this.ready = this.init()
@@ -100,15 +115,15 @@ export class HeliaFetch {
   /**
    * fetch a path from a given namespace and address.
    */
-  public async fetch ({ namespace, address, relativePath }: HeliaPathParts): Promise<AsyncIterable<Uint8Array>> {
+  public async fetch ({ namespace, address, relativePath, signal }: HeliaFetchOptions): Promise<AsyncIterable<Uint8Array>> {
     try {
       await this.ready
       this.log('Processing Fetch:', { namespace, address, relativePath })
       switch (namespace) {
         case 'ipfs':
-          return await this.fetchIpfs(CID.parse(address), { path: relativePath })
+          return await this.fetchIpfs(CID.parse(address), { path: relativePath, signal })
         case 'ipns':
-          return await this.fetchIpns(address, { path: relativePath })
+          return await this.fetchIpns(address, { path: relativePath, signal })
         default:
           throw new Error('Namespace is not valid, provide path as /ipfs/<cid> or /ipns/<path>')
       }
@@ -152,16 +167,51 @@ export class HeliaFetch {
   }
 
   /**
+   * Checks if a redirect is needed and returns either the original address or the redirect address.
+   */
+  private async checkForRedirect (address: string, options?: Parameters<UnixFS['cat']>[1]): Promise<string> {
+    if (!this.config.resolveRedirects) {
+      return address
+    }
+    try {
+      this.log('Checking for redirect of:', address)
+      const redirectCheckResponse = await fetch(`http://${address}`, { method: 'HEAD', redirect: 'manual', ...options })
+      if ([301, 302, 307, 308].includes(redirectCheckResponse.status)) {
+        this.log('Redirect statuscode :', redirectCheckResponse.status)
+        const redirectText = redirectCheckResponse.headers.get('location')
+        if (redirectText == null) {
+          this.log('No location header')
+          return address
+        } else {
+          const redirectUrl = new URL(redirectText)
+          this.log('Redirect found:', redirectUrl.host)
+          return redirectUrl.host
+        }
+      }
+    } catch {
+      // ignore errors on redirect checks
+      this.log('Error checking for redirect for url')
+    }
+    return address
+  }
+
+  /**
    * Fetch IPNS content.
    */
   private async fetchIpns (address: string, options?: Parameters<UnixFS['cat']>[1]): Promise<AsyncIterable<Uint8Array>> {
     if (!this.ipnsResolutionCache.has(address)) {
       this.log('Fetching from DNS over HTTP:', address)
-      const txtRecords = await this.dohResolver.resolveTxt(`_dnslink.${address}`)
+      const redirectAddress = await this.checkForRedirect(address)
+      const txtRecords = await this.dohResolver.resolveTxt(`_dnslink.${redirectAddress}`)
       const pathEntry = txtRecords.find(([record]) => record.startsWith('dnslink='))
       const path = pathEntry?.[0].replace('dnslink=', '')
       this.log('Got Path from DNS over HTTP:', path)
       this.ipnsResolutionCache.set(address, path ?? 'not-found')
+      if (redirectAddress !== address) {
+        this.ipnsResolutionCache.set(redirectAddress, path ?? 'not-found')
+      }
+      // we don't do anything with this, but want to fail if it is not a valid path
+      this.parsePath(path ?? '')
     }
     if (this.ipnsResolutionCache.get(address) === 'not-found') {
       this.log('No Path found:', address)
@@ -185,26 +235,21 @@ export class HeliaFetch {
    */
   private async getDirectoryResponse (...[cid, options]: Parameters<UnixFS['cat']>): Promise<AsyncIterable<Uint8Array>> {
     this.log('Getting directory response:', { cid, options })
-    const rootFile = await pTryEach(this.rootFilePatterns.map(file => {
-      const directoryPath = options?.path ?? ''
-      return async (): Promise<{ name: string, cid: CID }> => {
-        try {
-          const path = this.sanitizeUrlPath(`${directoryPath}/${file}`)
-          this.log('Trying to get root file:', { file, directoryPath })
-          const stats = await this.fs.stat(cid, { path })
-          this.log('Got root file:', { file, directoryPath, stats })
-          return {
-            name: file,
-            cid: stats.cid
-          }
-        } catch (error) {
-          return Promise.reject(error)
-        }
+    let rootFile: UnixFSEntry | null = null
+    for await (const file of this.fs.ls(cid, { signal: options?.signal })) {
+      if (this.rootFilePatterns.includes(file.name)) {
+        this.log(`Found root file '${file.name}': `, file)
+        rootFile = file
+        break
+      } else {
+        this.log(`Skipping ${file.type} '${file.name}' in root CID because the filename is not in rootFilePatterns: ${this.rootFilePatterns}`)
       }
-    }))
+    }
+    if (rootFile == null) {
+      throw new Error('No root file found')
+    }
 
-    // no options needed, because we already have the CID for the rootFile
-    return this.getFileResponse(rootFile.cid)
+    return this.getFileResponse(rootFile.cid, { ...options })
   }
 
   /**

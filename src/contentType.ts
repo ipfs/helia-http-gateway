@@ -23,7 +23,7 @@ const tests: Array<(input: testInput) => testOutput> = [
   // testing file-type from buffer
   async ({ bytes }): testOutput => (await fileTypeFromBuffer(bytes))?.mime,
   // testing file-type from path
-  // ts-expect-error because the type definitions are misleading
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   async ({ path }): testOutput => mime.lookup(path) || undefined,
   // default
   async (): Promise<string> => DEFAULT_MIME_TYPE

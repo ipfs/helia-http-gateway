@@ -1,6 +1,6 @@
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { CID } from 'multiformats'
-import { USE_SUBDOMAINS } from './constants.js'
+import { USE_SUBDOMAINS, RESOLVE_REDIRECTS } from './constants.js'
 import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
 import { getCustomHelia } from './getCustomHelia.js'
 import { HeliaFetch } from './heliaFetch.js'
@@ -11,7 +11,7 @@ const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.
 export interface RouteEntry<T extends RouteGenericInterface = RouteGenericInterface> {
   path: string
   type: 'GET' | 'POST'
-  handler: (request: FastifyRequest<T>, reply: FastifyReply) => Promise<void>
+  handler(request: FastifyRequest<T>, reply: FastifyReply): Promise<void>
 }
 
 interface RouteHandler<T extends RouteGenericInterface = RouteGenericInterface> {
@@ -41,7 +41,7 @@ export class HeliaServer {
   public routes: RouteEntry[]
 
   constructor (logger: debug.Debugger) {
-    this.log = logger.extend('fastify')
+    this.log = logger.extend('server')
     this.isReady = this.init()
     this.routes = []
     this.log('Initialized')
@@ -53,7 +53,10 @@ export class HeliaServer {
   async init (): Promise<void> {
     this.heliaFetch = new HeliaFetch({
       logger: this.log,
-      node: await getCustomHelia()
+      node: await getCustomHelia(),
+      config: {
+        resolveRedirects: RESOLVE_REDIRECTS
+      }
     })
     await this.heliaFetch.ready
     // eslint-disable-next-line no-console
@@ -82,7 +85,13 @@ export class HeliaServer {
         path: '/api/v0/repo/gc',
         type: 'POST',
         handler: async (request, reply): Promise<void> => this.gc({ request, reply })
-      }, {
+      },
+      {
+        path: '/api/v0/repo/gc',
+        type: 'GET',
+        handler: async (request, reply): Promise<void> => this.gc({ request, reply })
+      },
+      {
         path: '/*',
         type: 'GET',
         handler: async (request, reply): Promise<void> => this.fetch({ request, reply })
@@ -91,6 +100,10 @@ export class HeliaServer {
         path: '/',
         type: 'GET',
         handler: async (request, reply): Promise<void> => {
+          if (request.url.includes('/api/v0')) {
+            await reply.code(400).send('API + Method not supported')
+            return
+          }
           if (USE_SUBDOMAINS && request.hostname.split('.').length > 1) {
             return this.fetch({ request, reply })
           }
@@ -108,6 +121,10 @@ export class HeliaServer {
       return this.fetchWithoutSubdomain({ request, reply })
     }
     const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
+    if (address.includes('wikipedia')) {
+      await reply.code(500).send('Wikipedia is not yet supported. Follow https://github.com/ipfs/helia-http-gateway/issues/35 for more information.')
+      return
+    }
     let cidv1Address: string | null = null
     if (this.HAS_UPPERCASE_REGEX.test(address)) {
       cidv1Address = CID.parse(address).toV1().toString()
@@ -130,44 +147,69 @@ export class HeliaServer {
   }
 
   async fetchWithoutSubdomain ({ request, reply }: RouteHandler): Promise<void> {
+    const opController = new AbortController()
+    request.raw.on('close', () => {
+      if (request.raw.aborted) {
+        this.log('Request aborted by client')
+        opController.abort()
+      }
+    })
     const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
     try {
       await this.isReady
-      await this._fetch({ request, reply, address, namespace, relativePath })
+      await this._fetch({ request, reply, address, namespace, relativePath, signal: opController.signal })
     } catch (error) {
       this.log('Error requesting content from helia:', error)
       await reply.code(500).send(error)
     }
   }
 
-  async _fetch ({ reply, address, namespace, relativePath }: RouteHandler & ParsedEntryParams): Promise<void> {
+  async _fetch ({ reply, address, namespace, relativePath, signal }: RouteHandler & ParsedEntryParams & { signal: AbortSignal }): Promise<void> {
     this.log('Fetching from Helia:', { address, namespace, relativePath })
     let type: string | undefined
     // raw response is needed to respond with the correct content type.
-    for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath })) {
-      if (type === undefined) {
-        type = await parseContentType({ bytes: chunk, path: relativePath })
-        // this needs to happen first.
-        reply.raw.writeHead(200, {
-          'Content-Type': type ?? DEFAULT_MIME_TYPE,
-          'Cache-Control': 'public, max-age=31536000, immutable'
-        })
+    try {
+      for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath, signal })) {
+        if (type === undefined) {
+          type = await parseContentType({ bytes: chunk, path: relativePath })
+          // this needs to happen first.
+          reply.raw.writeHead(200, {
+            'Content-Type': type ?? DEFAULT_MIME_TYPE,
+            'Cache-Control': 'public, max-age=31536000, immutable'
+          })
+        }
+        reply.raw.write(Buffer.from(chunk))
       }
-      reply.raw.write(Buffer.from(chunk))
+    } catch (err) {
+      this.log('Error fetching from Helia:', err)
+      // TODO: If we failed here and we already wrote the headers, we need to handle that.
+      // await reply.code(500)
+    } finally {
+      reply.raw.end()
     }
-    reply.raw.end()
   }
 
   /**
    * Fetches a content for a subdomain, which basically queries delegated routing API and then fetches the path from helia.
    */
   async fetch ({ request, reply }: RouteHandler): Promise<void> {
+    const opController = new AbortController()
+    request.raw.on('close', () => {
+      if (request.raw.aborted) {
+        this.log('Request aborted by client')
+        opController.abort()
+      }
+    })
     try {
       await this.isReady
       this.log('Requesting content from helia:', request.url)
       const { address, namespace } = this.parseHostParts(request.hostname)
+      if (address.includes('wikipedia')) {
+        await reply.code(500).send('Wikipedia is not yet supported. Follow https://github.com/ipfs/helia-http-gateway/issues/35 for more information.')
+        return
+      }
       const { url: relativePath } = request
-      await this._fetch({ request, reply, address, namespace, relativePath })
+      await this._fetch({ request, reply, address, namespace, relativePath, signal: opController.signal })
     } catch (error) {
       this.log('Error requesting content from helia:', error)
       await reply.code(500).send(error)
@@ -219,7 +261,7 @@ export class HeliaServer {
   async gc ({ reply }: RouteHandler): Promise<void> {
     await this.isReady
     this.log('GCing node')
-    await this.heliaFetch.node?.gc()
+    await this.heliaFetch.node?.gc({ signal: AbortSignal.timeout(20000) })
     await reply.code(200).send('OK')
   }
 

@@ -36,6 +36,7 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:
 | Variable | Description | Default |
 | --- | --- | --- |
 | `DEBUG` | Debug level | `''`|
+| `FASTIFY_DEBUG` | Debug level for fastify's logger | `''`|
 | `PORT` | Port to listen on | `8080` |
 | `HOST` | Host to listen on | `0.0.0.0` |
 | `USE_SUBDOMAINS` | Whether to use [origin isolation](https://docs.ipfs.tech/how-to/gateway-best-practices/#use-subdomain-gateway-resolution-for-origin-isolation) | `false` |
@@ -44,6 +45,7 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:
 | `USE_TRUSTLESS_GATEWAYS` | Whether to fetch content from trustless-gateways or not | `true` |
 | `TRUSTLESS_GATEWAYS` | Comma separated list of trusted gateways to fetch content from | [Defined in Helia](https://github.com/ipfs/helia/blob/main/packages/helia/src/block-brokers/trustless-gateway/index.ts) |
 | `USE_LIBP2P` | Whether to use libp2p networking | `true` |
+| `RESOLVE_REDIRECTS` | Whether to resolve redirects before looking up dnslink entries | `true` |
 
 <!--
 TODO: currently broken when used in docker, but they work when running locally (you can cache datastore and blockstore locally to speed things up if you want)
