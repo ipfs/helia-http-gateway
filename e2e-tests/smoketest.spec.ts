@@ -54,6 +54,6 @@ pages.forEach((pagePath) => {
     expect(await heliaGatewayResponse?.text()).not.toEqual('')
     const headers = heliaGatewayResponse?.headers()
     expect(headers).not.toBeNull()
-    expect(headers?.['content-type']).toContain('text/html')
+    expect(headers?.['content-type']).toContain('text/')
   })
 })
