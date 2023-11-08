@@ -46,4 +46,4 @@ jobs:
           push: ${{ github.event_name == 'push' || github.event.inputs.push == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/arm64, linux/amd64
+          platforms: linux/arm64,linux/amd64,darwin/arm64,darwin/amd64,windows/amd64,windows/arm64
