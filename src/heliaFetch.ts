@@ -233,10 +233,12 @@ export class HeliaFetch {
     this.log('Getting directory response:', { cid, options })
     let rootFile: UnixFSEntry | null = null
     for await (const file of this.fs.ls(cid, { signal: options?.signal })) {
-      if (file.type === 'file' && this.rootFilePatterns.includes(file.name)) {
+      if (this.rootFilePatterns.includes(file.name)) {
         this.log(`Found root file '${file.name}': `, file)
         rootFile = file
         break
+      } else {
+        this.log(`Skipping ${file.type} '${file.name}' in root CID because the filename is not in rootFilePatterns: ${this.rootFilePatterns}`)
       }
     }
     if (rootFile == null) {
