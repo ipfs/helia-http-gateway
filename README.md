@@ -9,7 +9,7 @@ This container image hosts helia in a node container. It implements [HTTP IPFS-g
 ## Run from the github container registry
 
 ```sh
-$ docker run -it -p 8080:8080 ghcr.io/ipfs/helia-http-gateway:main
+$ docker run -it -p 8080:8080 ghcr.io/ipfs/helia-http-gateway:latest
 ```
 
 See https://github.com/ipfs/helia-http-gateway/pkgs/container/helia-http-gateway for more information.
