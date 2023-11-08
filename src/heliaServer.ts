@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises'
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { CID } from 'multiformats'
 import { USE_SUBDOMAINS, RESOLVE_REDIRECTS } from './constants.js'
@@ -30,7 +31,7 @@ interface ParsedEntryParams {
   namespace: string
   relativePath: string
 }
-
+let favicon: Buffer | null = null
 export class HeliaServer {
   private heliaFetch!: HeliaFetch
   private heliaVersionInfo!: { Version: string, Commit: string }
@@ -90,6 +91,14 @@ export class HeliaServer {
         path: '/api/v0/repo/gc',
         type: 'GET',
         handler: async (request, reply): Promise<void> => this.gc({ request, reply })
+      },
+      {
+        path: '/favicon.ico',
+        type: 'GET',
+        handler: async (request, reply): Promise<void> => {
+          favicon = favicon ?? await fs.readFile('./node_modules/@helia/css/logos/favicon.ico')
+          await reply.code(200).header('Content-Type', 'image/x-icon').send(favicon)
+        }
       },
       {
         path: '/*',

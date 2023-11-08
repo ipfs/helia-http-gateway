@@ -49,6 +49,7 @@
   },
   "homepage": "https://github.com/ipfs/helia-http-gateway#readme",
   "devDependencies": {
+    "@helia/css": "^1.0.1",
     "@playwright/test": "^1.39.0",
     "@types/mime-types": "2.x",
     "@types/node": "20.x",
