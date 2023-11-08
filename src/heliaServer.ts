@@ -117,11 +117,12 @@ export class HeliaServer {
    * Redirects to the subdomain gateway.
    */
   private async handleEntry ({ request, reply }: RouteHandler): Promise<void> {
+    const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
+    this.log('Handling entry: ', { address, namespace, relativePath })
     if (!USE_SUBDOMAINS) {
       this.log('Subdomains are disabled, fetching without subdomain')
       return this.fetchWithoutSubdomain({ request, reply })
     }
-    const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
     if (address.includes('wikipedia')) {
       await reply.code(500).send('Wikipedia is not yet supported. Follow https://github.com/ipfs/helia-http-gateway/issues/35 for more information.')
       return
