@@ -22,6 +22,33 @@ This script will start up the gateway and run the `test-gateway.sh` script until
 ./debugging/until-death.sh
 ```
 
+# Debugging the docker container
+
+## Setup
+
+First, build the docker container. This will tag the container as `helia-http-gateway:local-<arch>` (or `helia-http-gateway:local-arm64` on M1 macOS) and will be used in the following examples.
+
+```sh
+USE_SUBDOMAINS=true USE_REDIRECTS=false docker build . --platform linux/$(arch) --tag helia-http-gateway:local-$(arch)
+``````
+
+Then we need to start the container
+
+```sh
+docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:local-$(arch)
+# or
+docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" -e USE_REDIRECTS="false" -e USE_SUBDOMAINS="true" helia-http-gateway:local-$(arch)
+```
+
+## Running tests against the container
+
+Then you just need to execute one of the debugging scripts:
+
+```sh
+npm run debug:until-death # continuous testing until the container dies (hopefully it doesn't)
+npm run debug:test-gateways # one round of testing all the websites tiros will test.
+```
+
 # Profiling in chrome/chromium devtools
 
 ## Setup
