@@ -168,18 +168,25 @@ export class HeliaServer {
     this.log('Fetching from Helia:', { address, namespace, relativePath })
     let type: string | undefined
     // raw response is needed to respond with the correct content type.
-    for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath, signal })) {
-      if (type === undefined) {
-        type = await parseContentType({ bytes: chunk, path: relativePath })
-        // this needs to happen first.
-        reply.raw.writeHead(200, {
-          'Content-Type': type ?? DEFAULT_MIME_TYPE,
-          'Cache-Control': 'public, max-age=31536000, immutable'
-        })
+    try {
+      for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath, signal })) {
+        if (type === undefined) {
+          type = await parseContentType({ bytes: chunk, path: relativePath })
+          // this needs to happen first.
+          reply.raw.writeHead(200, {
+            'Content-Type': type ?? DEFAULT_MIME_TYPE,
+            'Cache-Control': 'public, max-age=31536000, immutable'
+          })
+        }
+        reply.raw.write(Buffer.from(chunk))
       }
-      reply.raw.write(Buffer.from(chunk))
+    } catch (err) {
+      this.log('Error fetching from Helia:', err)
+      // TODO: If we failed here and we already wrote the headers, we need to handle that.
+      // await reply.code(500)
+    } finally {
+      reply.raw.end()
     }
-    reply.raw.end()
   }
 
   /**
