@@ -60,6 +60,7 @@ test_website http://localhost:$PORT/ipns/singularity.storage
 
 test_website http://localhost:$PORT/ipns/specs.ipfs.tech
 
-test_website http://localhost:$PORT/ipns/strn.network
+# test_website http://localhost:$PORT/ipns/strn.network
+test_website http://localhost:$PORT/ipns/saturn.tech
 
 test_website http://localhost:$PORT/ipns/web3.storage

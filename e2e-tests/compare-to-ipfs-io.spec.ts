@@ -21,7 +21,8 @@ const pages = [
   '/ipns/research.protocol.ai', // slow-ish, but can pass.
   '/ipns/singularity.storage',
   '/ipns/specs.ipfs.tech',
-  '/ipns/strn.network'
+  // '/ipns/strn.network' // redirects to saturn.tech
+  '/ipns/saturn.tech'
   // '/ipns/web3.storage' // currently timing out for Helia
 ]
 
