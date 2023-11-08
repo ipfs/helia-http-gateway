@@ -118,6 +118,7 @@ export class HeliaServer {
    */
   private async handleEntry ({ request, reply }: RouteHandler): Promise<void> {
     if (!USE_SUBDOMAINS) {
+      this.log('Subdomains are disabled, fetching without subdomain')
       return this.fetchWithoutSubdomain({ request, reply })
     }
     const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
@@ -131,7 +132,7 @@ export class HeliaServer {
     }
     const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}${relativePath ?? ''}`
     this.log('Redirecting to final URL:', finalUrl)
-    await reply.redirect(finalUrl)
+    await reply.redirect(307, finalUrl)
   }
 
   /**
