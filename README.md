@@ -6,6 +6,14 @@ Docker images for Helia.
 
 This container image hosts helia in a node container. It implements [HTTP IPFS-gateway API](https://docs.ipfs.tech/concepts/ipfs-gateway/#gateway-types) and responds to the incoming requests using helia to fetch the content from IPFS.
 
+## Run from the github container registry
+
+```sh
+$ docker run -it -p 8080:8080 ghcr.io/ipfs/helia-http-gateway:main
+```
+
+See https://github.com/ipfs/helia-http-gateway/pkgs/container/helia-http-gateway for more information.
+
 ## Run Using Docker Compose
 
 ```sh
@@ -16,19 +24,19 @@ $ docker-compose up
 
 ### Build
 ```sh
-$ docker build . --tag helia
+$ docker build . --tag helia-http-gateway:local
 ```
 
 Pass the explicit platform when building on a Mac.
 
 ```sh
-$ docker build . --tag helia --platform linux/arm64
+$ docker build . --platform linux/arm64 --tag helia-http-gateway:local-arm64
 ```
 
 ### Running
 
 ```sh
-$ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway" helia
+$ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:local # or helia-http-gateway:local-arm64
 ```
 
 ## Supported Environment Variables
@@ -39,7 +47,7 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway" helia
 | `FASTIFY_DEBUG` | Debug level for fastify's logger | `''`|
 | `PORT` | Port to listen on | `8080` |
 | `HOST` | Host to listen on | `0.0.0.0` |
-| `USE_SUBDOMAINS` | Whether to use [origin isolation](https://docs.ipfs.tech/how-to/gateway-best-practices/#use-subdomain-gateway-resolution-for-origin-isolation) | `false` |
+| `USE_SUBDOMAINS` | Whether to use [origin isolation](https://docs.ipfs.tech/how-to/gateway-best-practices/#use-subdomain-gateway-resolution-for-origin-isolation) | `true` |
 | `METRICS` | Whether to enable prometheus metrics. Any value other than 'true' will disable metrics. | `true` |
 | `USE_BITSWAP` | Use bitswap to fetch content from IPFS | `true` |
 | `USE_TRUSTLESS_GATEWAYS` | Whether to fetch content from trustless-gateways or not | `true` |

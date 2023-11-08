@@ -1,4 +1,4 @@
-FROM node:20-slim as builder
+FROM --platform=$BUILDPLATFORM node:20-slim as builder
 
 RUN apt-get update
 RUN apt-get install -y build-essential cmake git libssl-dev tini
@@ -15,7 +15,7 @@ RUN npm run build
 
 RUN npm prune --omit=dev
 
-FROM node:20-slim as app
+FROM --platform=$BUILDPLATFORM node:20-slim as app
 ENV NODE_ENV production
 WORKDIR /app
 # built src without dev dependencies
@@ -26,6 +26,8 @@ COPY --from=builder /usr/bin/tini /usr/bin/tini
 # copy shared libraries (without having artifacts from apt-get install that is needed to build our application)
 COPY --from=builder /usr/lib/**/libcrypto* /usr/lib/
 COPY --from=builder /usr/lib/**/libssl* /usr/lib/
+
+EXPOSE 8080
 
 HEALTHCHECK --interval=12s --timeout=12s --start-period=10s CMD npm run healthcheck
 
