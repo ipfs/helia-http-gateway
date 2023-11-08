@@ -1,4 +1,5 @@
 import { unixfs, type UnixFS } from '@helia/unixfs'
+import { anySignal } from 'any-signal'
 import { MemoryBlockstore } from 'blockstore-core'
 import { MemoryDatastore } from 'datastore-core'
 import debug from 'debug'
@@ -6,7 +7,6 @@ import DOHResolver from 'dns-over-http-resolver'
 import { createHelia, type Helia } from 'helia'
 import { LRUCache } from 'lru-cache'
 import { CID } from 'multiformats/cid'
-import pTryEach from 'p-try-each'
 
 const ROOT_FILE_PATTERNS = [
   'index.html',
@@ -149,14 +149,14 @@ export class HeliaFetch {
    * Fetch from IPFS
    */
   private async fetchIpfs (...[cid, options]: Parameters<UnixFS['cat']>): Promise<AsyncIterable<Uint8Array>> {
-    const { type } = await this.fs.stat(cid, options)
+    const { type, fileSize } = await this.fs.stat(cid, options)
     this.log('Fetching from IPFS:', { cid, type, options })
     switch (type) {
       case 'directory':
         return this.getDirectoryResponse(cid, options)
       case 'raw':
       case 'file':
-        return this.getFileResponse(cid, options)
+        return this.getFileResponse(cid, { ...options, length: Number(fileSize) })
       default:
         throw new Error(`Unsupported fsStatInfo.type: ${type}`)
     }
@@ -231,26 +231,30 @@ export class HeliaFetch {
    */
   private async getDirectoryResponse (...[cid, options]: Parameters<UnixFS['cat']>): Promise<AsyncIterable<Uint8Array>> {
     this.log('Getting directory response:', { cid, options })
-    const rootFile = await pTryEach(this.rootFilePatterns.map(file => {
+    const operationController = new AbortController()
+    const signals: Array<ReturnType<typeof anySignal>> = []
+    const rootFile = await Promise.any(this.rootFilePatterns.map(async (file) => {
+      const siblingOrParentSignal = anySignal([operationController.signal, options?.signal])
+      signals.push(siblingOrParentSignal)
       const directoryPath = options?.path ?? ''
-      return async (): Promise<{ name: string, cid: CID }> => {
-        try {
-          const path = this.sanitizeUrlPath(`${directoryPath}/${file}`)
-          this.log('Trying to get root file:', { file, path })
-          const stats = await this.fs.stat(cid, { path })
-          this.log('Got root file:', { file, path, stats })
-          return {
-            name: file,
-            cid: stats.cid
-          }
-        } catch (error) {
-          return Promise.reject(error)
+      try {
+        const path = this.sanitizeUrlPath(`${directoryPath}/${file}`)
+        this.log('Trying to get root file:', { file, path })
+        const stats = await this.fs.stat(cid, { path, signal: siblingOrParentSignal })
+        this.log('Got root file:', { file, path, stats })
+        return {
+          name: file,
+          cid: stats.cid,
+          stats
         }
+      } catch (error) {
+        return Promise.reject(error)
       }
     }))
+    operationController.abort()
+    signals.forEach((signal) => { signal.clear() })
 
-    // no options needed, because we already have the CID for the rootFile
-    return this.getFileResponse(rootFile.cid)
+    return this.getFileResponse(rootFile.cid, { ...options, length: Number(rootFile.stats.fileSize) })
   }
 
   /**

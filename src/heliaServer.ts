@@ -85,7 +85,13 @@ export class HeliaServer {
         path: '/api/v0/repo/gc',
         type: 'POST',
         handler: async (request, reply): Promise<void> => this.gc({ request, reply })
-      }, {
+      },
+      {
+        path: '/api/v0/repo/gc',
+        type: 'GET',
+        handler: async (request, reply): Promise<void> => this.gc({ request, reply })
+      },
+      {
         path: '/*',
         type: 'GET',
         handler: async (request, reply): Promise<void> => this.fetch({ request, reply })
@@ -94,6 +100,10 @@ export class HeliaServer {
         path: '/',
         type: 'GET',
         handler: async (request, reply): Promise<void> => {
+          if (request.url.includes('/api/v0')) {
+            await reply.code(400).send('API + Method not supported')
+            return
+          }
           if (USE_SUBDOMAINS && request.hostname.split('.').length > 1) {
             return this.fetch({ request, reply })
           }
@@ -111,6 +121,10 @@ export class HeliaServer {
       return this.fetchWithoutSubdomain({ request, reply })
     }
     const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
+    if (address.includes('wikipedia')) {
+      await reply.code(500).send('Wikipedia is not yet supported. Follow https://github.com/ipfs/helia-http-gateway/issues/35 for more information.')
+      return
+    }
     let cidv1Address: string | null = null
     if (this.HAS_UPPERCASE_REGEX.test(address)) {
       cidv1Address = CID.parse(address).toV1().toString()
@@ -169,6 +183,10 @@ export class HeliaServer {
       await this.isReady
       this.log('Requesting content from helia:', request.url)
       const { address, namespace } = this.parseHostParts(request.hostname)
+      if (address.includes('wikipedia')) {
+        await reply.code(500).send('Wikipedia is not yet supported. Follow https://github.com/ipfs/helia-http-gateway/issues/35 for more information.')
+        return
+      }
       const { url: relativePath } = request
       await this._fetch({ request, reply, address, namespace, relativePath })
     } catch (error) {
