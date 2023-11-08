@@ -53,6 +53,9 @@ export default defineConfig({
     command: (process.env.DOCTOR != null) ? 'npm run start:dev-doctor' : 'npm run start:dev',
     port: PORT,
     // Tiros does not re-use the existing server.
-    reuseExistingServer: process.env.CI == null
+    reuseExistingServer: process.env.CI == null,
+    env: {
+      DEBUG: process.env.DEBUG ?? ' '
+    }
   }
 })

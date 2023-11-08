@@ -3,6 +3,7 @@ export const PORT = Number(process.env.PORT ?? 8080)
 export const HOST = process.env.HOST ?? '0.0.0.0'
 
 export const DEBUG = process.env.DEBUG ?? ''
+export const FASTIFY_DEBUG = process.env.FASTIFY_DEBUG ?? ''
 
 export const USE_SUBDOMAINS = process.env.USE_SUBDOMAINS === 'true'
 

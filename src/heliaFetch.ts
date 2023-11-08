@@ -6,7 +6,7 @@ import DOHResolver from 'dns-over-http-resolver'
 import { createHelia, type Helia } from 'helia'
 import { LRUCache } from 'lru-cache'
 import { CID } from 'multiformats/cid'
-import pTryEach from 'p-try-each'
+import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
 
 const ROOT_FILE_PATTERNS = [
   'index.html',
@@ -18,6 +18,10 @@ interface HeliaPathParts {
   namespace: string
   address: string
   relativePath: string
+}
+
+interface HeliaFetchOptions extends HeliaPathParts {
+  signal?: AbortSignal
 }
 
 interface HeliaFetchConfig {
@@ -111,15 +115,15 @@ export class HeliaFetch {
   /**
    * fetch a path from a given namespace and address.
    */
-  public async fetch ({ namespace, address, relativePath }: HeliaPathParts): Promise<AsyncIterable<Uint8Array>> {
+  public async fetch ({ namespace, address, relativePath, signal }: HeliaFetchOptions): Promise<AsyncIterable<Uint8Array>> {
     try {
       await this.ready
       this.log('Processing Fetch:', { namespace, address, relativePath })
       switch (namespace) {
         case 'ipfs':
-          return await this.fetchIpfs(CID.parse(address), { path: relativePath })
+          return await this.fetchIpfs(CID.parse(address), { path: relativePath, signal })
         case 'ipns':
-          return await this.fetchIpns(address, { path: relativePath })
+          return await this.fetchIpns(address, { path: relativePath, signal })
         default:
           throw new Error('Namespace is not valid, provide path as /ipfs/<cid> or /ipns/<path>')
       }
@@ -231,26 +235,21 @@ export class HeliaFetch {
    */
   private async getDirectoryResponse (...[cid, options]: Parameters<UnixFS['cat']>): Promise<AsyncIterable<Uint8Array>> {
     this.log('Getting directory response:', { cid, options })
-    const rootFile = await pTryEach(this.rootFilePatterns.map(file => {
-      const directoryPath = options?.path ?? ''
-      return async (): Promise<{ name: string, cid: CID }> => {
-        try {
-          const path = this.sanitizeUrlPath(`${directoryPath}/${file}`)
-          this.log('Trying to get root file:', { file, directoryPath })
-          const stats = await this.fs.stat(cid, { path })
-          this.log('Got root file:', { file, directoryPath, stats })
-          return {
-            name: file,
-            cid: stats.cid
-          }
-        } catch (error) {
-          return Promise.reject(error)
-        }
+    let rootFile: UnixFSEntry | null = null
+    for await (const file of this.fs.ls(cid, { signal: options?.signal })) {
+      if (this.rootFilePatterns.includes(file.name)) {
+        this.log(`Found root file '${file.name}': `, file)
+        rootFile = file
+        break
+      } else {
+        this.log(`Skipping ${file.type} '${file.name}' in root CID because the filename is not in rootFilePatterns: ${this.rootFilePatterns}`)
       }
-    }))
+    }
+    if (rootFile == null) {
+      throw new Error('No root file found')
+    }
 
-    // no options needed, because we already have the CID for the rootFile
-    return this.getFileResponse(rootFile.cid)
+    return this.getFileResponse(rootFile.cid, { ...options })
   }
 
   /**
