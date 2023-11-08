@@ -14,7 +14,8 @@ ensure_gateway_running() {
   npx wait-on "tcp:$PORT" -t 1000 || exit 1
 }
 
-max_timeout=60
+# Use the first argument to this script (if any) as the maximum timeout for curl
+max_timeout=${1:-60}
 test_website() {
   ensure_gateway_running
   local website=$1
