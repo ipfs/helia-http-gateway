@@ -6,6 +6,14 @@ Docker images for Helia.
 
 This container image hosts helia in a node container. It implements [HTTP IPFS-gateway API](https://docs.ipfs.tech/concepts/ipfs-gateway/#gateway-types) and responds to the incoming requests using helia to fetch the content from IPFS.
 
+## Run from the github container registry
+
+```sh
+$ docker run -it -p 8080:8080 ghcr.io/ipfs/helia-http-gateway:main
+```
+
+See https://github.com/ipfs/helia-http-gateway/pkgs/container/helia-http-gateway for more information.
+
 ## Run Using Docker Compose
 
 ```sh
