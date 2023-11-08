@@ -20,6 +20,10 @@ interface HeliaPathParts {
   relativePath: string
 }
 
+interface HeliaFetchOptions extends HeliaPathParts {
+  signal?: AbortSignal
+}
+
 interface HeliaFetchConfig {
   resolveRedirects: boolean
 }
@@ -111,15 +115,15 @@ export class HeliaFetch {
   /**
    * fetch a path from a given namespace and address.
    */
-  public async fetch ({ namespace, address, relativePath }: HeliaPathParts): Promise<AsyncIterable<Uint8Array>> {
+  public async fetch ({ namespace, address, relativePath, signal }: HeliaFetchOptions): Promise<AsyncIterable<Uint8Array>> {
     try {
       await this.ready
       this.log('Processing Fetch:', { namespace, address, relativePath })
       switch (namespace) {
         case 'ipfs':
-          return await this.fetchIpfs(CID.parse(address), { path: relativePath })
+          return await this.fetchIpfs(CID.parse(address), { path: relativePath, signal })
         case 'ipns':
-          return await this.fetchIpns(address, { path: relativePath })
+          return await this.fetchIpns(address, { path: relativePath, signal })
         default:
           throw new Error('Namespace is not valid, provide path as /ipfs/<cid> or /ipns/<path>')
       }

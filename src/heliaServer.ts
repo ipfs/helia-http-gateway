@@ -147,21 +147,28 @@ export class HeliaServer {
   }
 
   async fetchWithoutSubdomain ({ request, reply }: RouteHandler): Promise<void> {
+    const opController = new AbortController()
+    request.raw.on('close', () => {
+      if (request.raw.aborted) {
+        this.log('Request aborted by client')
+        opController.abort()
+      }
+    })
     const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
     try {
       await this.isReady
-      await this._fetch({ request, reply, address, namespace, relativePath })
+      await this._fetch({ request, reply, address, namespace, relativePath, signal: opController.signal })
     } catch (error) {
       this.log('Error requesting content from helia:', error)
       await reply.code(500).send(error)
     }
   }
 
-  async _fetch ({ reply, address, namespace, relativePath }: RouteHandler & ParsedEntryParams): Promise<void> {
+  async _fetch ({ reply, address, namespace, relativePath, signal }: RouteHandler & ParsedEntryParams & { signal: AbortSignal }): Promise<void> {
     this.log('Fetching from Helia:', { address, namespace, relativePath })
     let type: string | undefined
     // raw response is needed to respond with the correct content type.
-    for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath })) {
+    for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath, signal })) {
       if (type === undefined) {
         type = await parseContentType({ bytes: chunk, path: relativePath })
         // this needs to happen first.
@@ -179,6 +186,13 @@ export class HeliaServer {
    * Fetches a content for a subdomain, which basically queries delegated routing API and then fetches the path from helia.
    */
   async fetch ({ request, reply }: RouteHandler): Promise<void> {
+    const opController = new AbortController()
+    request.raw.on('close', () => {
+      if (request.raw.aborted) {
+        this.log('Request aborted by client')
+        opController.abort()
+      }
+    })
     try {
       await this.isReady
       this.log('Requesting content from helia:', request.url)
@@ -188,7 +202,7 @@ export class HeliaServer {
         return
       }
       const { url: relativePath } = request
-      await this._fetch({ request, reply, address, namespace, relativePath })
+      await this._fetch({ request, reply, address, namespace, relativePath, signal: opController.signal })
     } catch (error) {
       this.log('Error requesting content from helia:', error)
       await reply.code(500).send(error)
@@ -240,7 +254,7 @@ export class HeliaServer {
   async gc ({ reply }: RouteHandler): Promise<void> {
     await this.isReady
     this.log('GCing node')
-    await this.heliaFetch.node?.gc()
+    await this.heliaFetch.node?.gc({ signal: AbortSignal.timeout(20000) })
     await reply.code(200).send('OK')
   }
 
