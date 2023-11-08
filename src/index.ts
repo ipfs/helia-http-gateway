@@ -21,7 +21,7 @@ const app = Fastify({
   }
 })
 
-if (METRICS === 'true') {
+if (METRICS) {
   await app.register(metricsPlugin.default, { endpoint: '/metrics' })
 }
 

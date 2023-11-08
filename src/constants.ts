@@ -12,9 +12,9 @@ export const RESOLVE_REDIRECTS = process.env.RESOLVE_REDIRECTS !== 'false'
 /**
  * If set to any value other than 'true', we will disable prometheus metrics.
  *
- * @default 'true'
+ * @default 'false'
  */
-export const METRICS = process.env.METRICS ?? 'true'
+export const METRICS = process.env.METRICS === 'true'
 
 /**
  * If not set, we will enable bitswap by default.
