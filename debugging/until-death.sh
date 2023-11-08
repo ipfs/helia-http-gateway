@@ -47,13 +47,12 @@ cleanup() {
   # fuser -k $PORT/tcp
   # kill any process listening on $PORT with SIGTERM
 
-  if [ "$gateway_already_running" = true ]; then
-    echo "gateway was already running"
+  if [ "$gateway_already_running" != true ]; then
+    kill -s SIGINT $(lsof -i :$PORT -t)
     return
   fi
 
-  kill -s SIGINT $(lsof -i :$PORT -t)
-  # exit 1
+  exit 1
 }
 
 trap cleanup SIGINT
@@ -70,7 +69,7 @@ while [ $? -ne 1 ]; do
 #     break
 #   fi
   ensure_gateway_running
-  ./debugging/test-gateways.sh 2>&1 | tee -a debugging/test-gateways.log
+  ./debugging/test-gateways.sh 30 2>&1 | tee -a debugging/test-gateways.log
 done
 
 cleanup
