@@ -134,3 +134,4 @@ build
 /playwright/.cache/
 screenshots
 .envrc
+*.heapsnapshot

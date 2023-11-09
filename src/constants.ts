@@ -4,6 +4,7 @@ export const HOST = process.env.HOST ?? '0.0.0.0'
 
 export const DEBUG = process.env.DEBUG ?? ''
 export const FASTIFY_DEBUG = process.env.FASTIFY_DEBUG ?? ''
+export const USE_HEAPSNAPSHOTS = process.env.USE_HEAPSNAPSHOTS === 'true'
 
 export const USE_SUBDOMAINS = process.env.USE_SUBDOMAINS !== 'false'
 

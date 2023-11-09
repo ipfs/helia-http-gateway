@@ -14,6 +14,14 @@ This script is used to test the gateways. It assumes you have booted up the `hel
 ./debugging/test-gateways.sh
 ```
 
+### With heap snapshots
+
+If you want to get heap snapshots while running the tests, you can start the gateway with `USE_HEAPSNAPSHOTS=true` and then the tests will automatically save heap snapshots to the root of the repository and output the names in the script output. The following snapshots will be saved:
+
+1. At the beginning of the `test-gateways.sh` script
+<!-- 1. After each website is tested (but before GC) -->
+1. After GC is run (which is ran after each website is tested)
+
 ## until-death.sh
 This script will start up the gateway and run the `test-gateway.sh` script until the gateway dies. This is useful for load-testing helia-http-gateway in a similar manner to how it will be used by https://github.com/plprobelab/tiros
 

@@ -14,6 +14,24 @@ ensure_gateway_running() {
   npx wait-on "tcp:$PORT" -t 1000 || exit 1
 }
 
+heap_snapshots_enabled=false
+# try to access heap snapshot and make sure result is not a 500 err
+snapshot_result=$(curl --no-progress-meter http://localhost:8080/heap-snapshot)
+if [[ $snapshot_result == *"Internal Server Error"* ]]; then
+  heap_snapshots_enabled=false
+else
+  heap_snapshots_enabled=true
+  echo "Heap snapshot prior to tests saved: $snapshot_result"
+fi
+
+take_snapshot() {
+  if [ "$heap_snapshots_enabled" = true ]; then
+    echo "Requesting current heap snapshot..."
+    snapshot_result=$(curl --no-progress-meter http://localhost:8080/heap-snapshot)
+    echo "Heap snapshot saved: $snapshot_result"
+  fi
+}
+
 # Use the first argument to this script (if any) as the maximum timeout for curl
 max_timeout=${1:-60}
 test_website() {
@@ -21,8 +39,10 @@ test_website() {
   local website=$1
   echo "Requesting $website"
   curl -m $max_timeout -s --no-progress-meter -o /dev/null -w "%{url}: HTTP_%{http_code} in %{time_total} seconds (TTFB: %{time_starttransfer}, rediect: %{time_redirect})\n" -L $website
+  # take_snapshot
   echo "running GC"
   curl -X POST -m $max_timeout -s --no-progress-meter -o /dev/null -w "%{url}: HTTP_%{http_code} in %{time_total} seconds\n" http://localhost:$PORT/api/v0/repo/gc
+  take_snapshot
 }
 
 test_website http://localhost:$PORT/ipns/blog.ipfs.tech

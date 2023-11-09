@@ -1,7 +1,8 @@
+import { writeHeapSnapshot } from 'node:v8'
 import debug from 'debug'
 import Fastify from 'fastify'
 import metricsPlugin from 'fastify-metrics'
-import { FASTIFY_DEBUG, HOST, PORT, METRICS } from './constants.js'
+import { FASTIFY_DEBUG, HOST, PORT, METRICS, USE_HEAPSNAPSHOTS } from './constants.js'
 import { HeliaServer, type RouteEntry } from './heliaServer.js'
 
 const logger = debug('helia-http-gateway')
@@ -32,6 +33,16 @@ heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
     handler
   })
 })
+
+if (USE_HEAPSNAPSHOTS) {
+  app.route({
+    method: 'GET',
+    url: '/heap-snapshot',
+    handler: async (request, reply) => {
+      await reply.send(`${writeHeapSnapshot()}`)
+    }
+  })
+}
 
 await app.listen({ port: PORT, host: HOST })
 
