@@ -22,6 +22,10 @@ If you want to get heap snapshots while running the tests, you can start the gat
 <!-- 1. After each website is tested (but before GC) -->
 1. After GC is run (which is ran after each website is tested)
 
+You can then load the saved heap snapshots into chrome devtools to analyze them. Open devtools, select the `Memory` tab, right click the section under `Profiles` and click load. Then select the snapshot you want to analyze. You can load multiple and then choose the `Comparison` option instead of the `Summary` view in order to see increases/decreases in memory usage.
+
+See https://developer.chrome.com/docs/devtools/memory-problems/heap-snapshots/ & https://nodejs.org/en/docs/guides/diagnostics/memory/using-heap-snapshot for more information on heap snapshots.
+
 ## until-death.sh
 This script will start up the gateway and run the `test-gateway.sh` script until the gateway dies. This is useful for load-testing helia-http-gateway in a similar manner to how it will be used by https://github.com/plprobelab/tiros
 
