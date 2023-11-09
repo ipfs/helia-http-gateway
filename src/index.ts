@@ -27,6 +27,14 @@ const app = Fastify(fastifyOptions)
 
 if (METRICS) {
   await app.register(metricsPlugin.default, { endpoint: '/metrics' })
+} else {
+  app.route({
+    method: 'GET',
+    url: '/metrics',
+    handler: async (request, reply) => {
+      await reply.code(500).send('Metrics are disabled.')
+    }
+  })
 }
 
 heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
@@ -43,6 +51,14 @@ if (USE_HEAPSNAPSHOTS) {
     url: '/heap-snapshot',
     handler: async (request, reply) => {
       await reply.send(`${writeHeapSnapshot()}`)
+    }
+  })
+} else {
+  app.route({
+    method: 'GET',
+    url: '/heap-snapshot',
+    handler: async (request, reply) => {
+      await reply.code(500).send('Heap snapshots are disabled.')
     }
   })
 }
