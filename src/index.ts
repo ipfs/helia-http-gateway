@@ -1,18 +1,19 @@
 import { writeHeapSnapshot } from 'node:v8'
 import debug from 'debug'
-import Fastify from 'fastify'
+import Fastify, { type FastifyBaseLogger, type FastifyHttpsOptions } from 'fastify'
 import metricsPlugin from 'fastify-metrics'
 import { FASTIFY_DEBUG, HOST, PORT, METRICS, USE_HEAPSNAPSHOTS } from './constants.js'
 import { HeliaServer, type RouteEntry } from './heliaServer.js'
-
+import type { Server } from 'node:https'
 const logger = debug('helia-http-gateway')
 
 const heliaServer = new HeliaServer(logger)
 await heliaServer.isReady
 
-// Add the prometheus middleware
-const app = Fastify({
-  logger: {
+const fastifyOptions: Partial<FastifyHttpsOptions<Server, FastifyBaseLogger>> = {}
+
+if (FASTIFY_DEBUG !== '') {
+  fastifyOptions.logger = {
     enabled: FASTIFY_DEBUG !== '',
     msgPrefix: 'helia-http-gateway:fastify ',
     level: 'info',
@@ -20,7 +21,9 @@ const app = Fastify({
       target: 'pino-pretty'
     }
   }
-})
+}
+
+const app = Fastify(fastifyOptions)
 
 if (METRICS) {
   await app.register(metricsPlugin.default, { endpoint: '/metrics' })
