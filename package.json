@@ -17,6 +17,11 @@
     "test:http-e2e": "cross-env USE_BITSWAP=false USE_LIBP2P=false playwright test",
     "test:e2e-flame": "concurrently -k -s all -n \"gateway,playwright\" -c \"magenta,blue\" \"npm run start:dev-flame\" \"wait-on 'tcp:$PORT' && npm run test:e2e\"",
     "test:e2e-doctor": "concurrently -k -s all -n \"gateway,playwright\" -c \"magenta,blue\" \"npm run start:dev-doctor\" \"wait-on 'tcp:$PORT' && npm run test:e2e\"",
+    "test:gwc-kubo": "node ./scripts/kubo-init.js",
+    "test:gwc-helia": "npm run build && USE_LIBP2P=false PORT=8090 TRUSTLESS_GATEWAY='http://127.0.0.1:8080' npm start",
+    "test:gwc-execute": "docker run --network host -v $PWD:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 test --gateway-url http://localhost:8090 --json report.json --specs -path-ipns-gateway,-trustless-block-gateway,-trustless-car-gateway,-trustless-car-gateway-optional,-trustless-ipns-gateway,-trustless-gateway,-subdomain-gateway,-redirects-file -- -timeout 30m",
+    "test:gwc": "concurrently -k -s all -n \"kubo,helia,gateway-conformance\" -c \"magenta,blue,green\" \"npm run test:gwc-kubo\" \"wait-on 'tcp:8080' && npm run test:gwc-helia\" \"wait-on 'tcp:8090' && npm run test:gwc-execute\"",
+    "test:gateway-conformance": "TRUSTLESS_GATEWAY='http://localhost:8080' echo 'gateway conformance'",
     "healthcheck": "node dist/src/healthcheck.js",
     "debug:until-death": "./debugging/until-death.sh",
     "debug:test-gateways": "./debugging/test-gateways.sh"
@@ -57,6 +62,8 @@
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
     "debug": "4.3.4",
+    "execa": "^8.0.1",
+    "glob": "^10.3.10",
     "typescript": "5.x",
     "wait-on": "^7.1.0"
   },
