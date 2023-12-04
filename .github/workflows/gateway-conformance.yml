@@ -59,16 +59,16 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20
-          
+
       - name: Checkout helia-http-gateway
         uses: actions/checkout@v3
         with:
           path: helia-http-gateway
-          
+
       - name: Install dependencies
         run: npm ci
         working-directory: helia-http-gateway
-        
+
       - name: Build helia-http-gateway
         run: npm run build
         working-directory: helia-http-gateway
@@ -77,7 +77,7 @@ jobs:
       - name: Start helia-http-gateway
         env:
           GATEWAY_CONFORMANCE_TEST: true
-          TRUSTLESS_GATEWAY: "http://127.0.0.1:8080"
+          TRUSTLESS_GATEWAYS: "http://127.0.0.1:8080"
           USE_LIBP2P: false
           PORT: 8090
         run: |
