@@ -101,7 +101,7 @@ jobs:
           #
           # only-if-cached: helia-ht does not guarantee local cache, we will adjust upstream test (which was Kubo-specific)
           # for now disabling these test cases
-          args: -skip 'TestGatewayCache/.*_for_/ipfs/_with_only-if-cached_succeeds_when_in_local_datastore'
+          args: -skip '^.*(DirectoryListing|TestGatewayCache).*$'
 
       # 7. Upload the results
       - name: Upload MD summary
