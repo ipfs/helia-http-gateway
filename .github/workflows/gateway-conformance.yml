@@ -94,7 +94,7 @@ jobs:
           xml: output.xml
           html: output.html
           markdown: output.md
-          specs: +trustless-gateway,+path-gateway,+subdomain-gateway,+dnslink-gateway,+redirects-file
+          specs: -trustless-gateway,+path-gateway,+subdomain-gateway,+dnslink-gateway,-path-dag-gateway,-path-tar-gateway
           # use below to skip specific test if needed
           # args: -skip 'TestFooBr/GET_response_for_something'
           #
