@@ -28,6 +28,7 @@ async function main () {
   const ipfsNsMap = await loadFixtures(tmpDir)
   // execute the daemon
   const execaOptions = getExecaOptions({ tmpDir, ipfsNsMap })
+  log('Starting Kubo daemon...')
   await $(execaOptions)`npx kubo daemon --offline`
 }
 
