@@ -86,6 +86,7 @@ async function configureKubo (tmpDir) {
   const execaOptions = getExecaOptions({ tmpDir })
   try {
     await $(execaOptions)`npx -y kubo config Addresses.Gateway /ip4/127.0.0.1/tcp/8080`
+    await $(execaOptions)`npx -y kubo config --json Gateway.ExposeRoutingAPI true`
     log('Kubo configured')
   } catch (e) {
     error('Failed to configure Kubo', e)
