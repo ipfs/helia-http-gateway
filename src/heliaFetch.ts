@@ -235,21 +235,26 @@ export class HeliaFetch {
    */
   private async getDirectoryResponse (...[cid, options]: Parameters<UnixFS['cat']>): Promise<AsyncIterable<Uint8Array>> {
     this.log('Getting directory response:', { cid, options })
-    let rootFile: UnixFSEntry | null = null
-    for await (const file of this.fs.ls(cid, { signal: options?.signal })) {
-      if (this.rootFilePatterns.includes(file.name)) {
-        this.log(`Found root file '${file.name}': `, file)
-        rootFile = file
+    let indexFile: UnixFSStats | null = null
+
+    for (const path of this.rootFilePatterns) {
+      try {
+        indexFile = await this.fs.stat(cid, {
+          ...options,
+          path
+        })
+
         break
-      } else {
-        this.log(`Skipping ${file.type} '${file.name}' in root CID because the filename is not in rootFilePatterns: ${this.rootFilePatterns}`)
+      } catch (err: any) {
+        this.log('error loading path %c/%s', cid, path, err)
       }
     }
-    if (rootFile == null) {
+
+    if (indexFile == null) {
       throw new Error('No root file found')
     }
 
-    return this.getFileResponse(rootFile.cid, { ...options })
+    return this.getFileResponse(indexFile.cid, { ...options })
   }
 
   /**
