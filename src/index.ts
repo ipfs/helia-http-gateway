@@ -1,7 +1,7 @@
 import debug from 'debug'
 import Fastify from 'fastify'
 import metricsPlugin from 'fastify-metrics'
-import { FASTIFY_DEBUG, HOST, PORT, METRICS } from './constants.js'
+import { FASTIFY_DEBUG, HOST, PORT, METRICS, ECHO_HEADERS } from './constants.js'
 import { HeliaServer, type RouteEntry } from './heliaServer.js'
 
 const logger = debug('helia-http-gateway')
@@ -32,6 +32,17 @@ heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
     handler
   })
 })
+
+if ([ECHO_HEADERS].includes(true)) {
+  app.addHook('onRequest', async (request, reply) => {
+    if (ECHO_HEADERS) {
+      logger('fastify hook onRequest: echoing headers.')
+      Object.keys(request.headers).forEach((headerName) => {
+        logger('\t %s: %s', headerName, request.headers[headerName])
+      })
+    }
+  })
+}
 
 await app.listen({ port: PORT, host: HOST })
 

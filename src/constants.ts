@@ -9,6 +9,8 @@ export const USE_SUBDOMAINS = process.env.USE_SUBDOMAINS !== 'false'
 
 export const RESOLVE_REDIRECTS = process.env.RESOLVE_REDIRECTS !== 'false'
 
+export const ECHO_HEADERS = process.env.ECHO_HEADERS === 'true'
+
 /**
  * If set to any value other than 'true', we will disable prometheus metrics.
  *
