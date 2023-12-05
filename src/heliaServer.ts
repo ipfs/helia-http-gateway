@@ -10,7 +10,7 @@ const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.
 
 export interface RouteEntry<T extends RouteGenericInterface = RouteGenericInterface> {
   path: string
-  type: 'GET' | 'POST'
+  type: 'GET' | 'POST' | 'OPTIONS'
   handler(request: FastifyRequest<T>, reply: FastifyReply): Promise<void>
 }
 
@@ -123,7 +123,8 @@ export class HeliaServer {
    * Redirects to the subdomain gateway.
    */
   private async handleEntry ({ request, reply }: RouteHandler): Promise<void> {
-    const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
+    const { query, params } = request
+    const { ns: namespace, address, '*': relativePath } = params as EntryParams
     this.log('Handling entry: ', { address, namespace, relativePath })
     if (!USE_SUBDOMAINS) {
       this.log('Subdomains are disabled, fetching without subdomain')
@@ -137,9 +138,22 @@ export class HeliaServer {
     if (this.HAS_UPPERCASE_REGEX.test(address)) {
       cidv1Address = CID.parse(address).toV1().toString()
     }
-    const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}${relativePath ?? ''}`
+    const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}/${relativePath ?? ''}`
+    // eslint-disable-next-line no-warning-comments
+    // TODO: enable support for query params
+    // if (typeof query === 'string' && query.length > 0) {
+    //   this.log('query: ', query)
+    //   // http://localhost:8090/ipfs/bafybeie72edlprgtlwwctzljf6gkn2wnlrddqjbkxo3jomh4n7omwblxly/dir?format=raw
+    //   finalUrl += encodeURIComponent(`?${new URLSearchParams(query).toString()}`)
+    // }
+    this.log('relativePath: ', relativePath)
     this.log('Redirecting to final URL:', finalUrl)
-    await reply.redirect(307, finalUrl)
+    await reply
+      .headers({
+        Location: finalUrl
+      })
+      .code(301)
+      .send()
   }
 
   /**
@@ -155,6 +169,7 @@ export class HeliaServer {
   }
 
   async fetchWithoutSubdomain ({ request, reply }: RouteHandler): Promise<void> {
+    this.log('Fetching without subdomain')
     const opController = new AbortController()
     request.raw.on('close', () => {
       if (request.raw.aborted) {
@@ -201,6 +216,7 @@ export class HeliaServer {
    * Fetches a content for a subdomain, which basically queries delegated routing API and then fetches the path from helia.
    */
   async fetch ({ request, reply }: RouteHandler): Promise<void> {
+    this.log('Fetching from Helia:', request.url)
     const opController = new AbortController()
     request.raw.on('close', () => {
       if (request.raw.aborted) {
@@ -211,7 +227,16 @@ export class HeliaServer {
     try {
       await this.isReady
       this.log('Requesting content from helia:', request.url)
-      const { address, namespace } = this.parseHostParts(request.hostname)
+      let address: string
+      let namespace: string
+      try {
+        const hostParts = this.parseHostParts(request.hostname)
+        address = hostParts.address
+        namespace = hostParts.namespace
+      } catch (e) {
+        // not a valid request, should have been caught prior to calling this method.
+        return await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
+      }
       if (address.includes('wikipedia')) {
         await reply.code(500).send('Wikipedia is not yet supported. Follow https://github.com/ipfs/helia-http-gateway/issues/35 for more information.')
         return

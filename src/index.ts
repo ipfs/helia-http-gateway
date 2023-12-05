@@ -1,3 +1,4 @@
+import cors from '@fastify/cors'
 import debug from 'debug'
 import Fastify from 'fastify'
 import metricsPlugin from 'fastify-metrics'
@@ -25,6 +26,26 @@ if (METRICS === 'true') {
   await app.register(metricsPlugin.default, { endpoint: '/metrics' })
 }
 
+await app.register(cors, {
+  /**
+   * @see https://github.com/ipfs/gateway-conformance/issues/186
+   * @see https://github.com/ipfs/gateway-conformance/blob/d855ec4fb9dac4a5aaecf3776037b005cc74c566/tests/path_gateway_cors_test.go#L16-L56
+   */
+  allowedHeaders: ['Content-Type', 'Range', 'User-Agent', 'X-Requested-With'],
+  origin: '*',
+  exposedHeaders: [
+    'Content-Range',
+    'Content-Length',
+    'X-Ipfs-Path',
+    'X-Ipfs-Roots',
+    'X-Chunked-Output',
+    'X-Stream-Output'
+  ],
+  methods: ['GET', 'HEAD', 'OPTIONS'],
+  strictPreflight: false,
+  preflightContinue: true
+})
+
 heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
   app.route({
     method: type,
@@ -36,11 +57,22 @@ heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
 if ([ECHO_HEADERS].includes(true)) {
   app.addHook('onRequest', async (request, reply) => {
     if (ECHO_HEADERS) {
-      logger('fastify hook onRequest: echoing headers.')
+      logger('fastify hook onRequest: echoing headers:')
       Object.keys(request.headers).forEach((headerName) => {
         logger('\t %s: %s', headerName, request.headers[headerName])
       })
     }
+  })
+
+  app.addHook('onSend', async (request, reply, payload) => {
+    if (ECHO_HEADERS) {
+      logger('fastify hook onSend: echoing headers:')
+      const responseHeaders = reply.getHeaders()
+      Object.keys(responseHeaders).forEach((headerName) => {
+        logger('\t %s: %s', headerName, responseHeaders[headerName])
+      })
+    }
+    return payload
   })
 }
 
