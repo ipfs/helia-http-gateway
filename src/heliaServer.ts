@@ -1,3 +1,4 @@
+import { setMaxListeners } from 'node:events'
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { CID } from 'multiformats'
 import { USE_SUBDOMAINS, RESOLVE_REDIRECTS } from './constants.js'
@@ -150,6 +151,7 @@ export class HeliaServer {
 
   async fetchWithoutSubdomain ({ request, reply }: RouteHandler): Promise<void> {
     const opController = new AbortController()
+    setMaxListeners(Infinity, opController.signal)
     request.raw.on('close', () => {
       if (request.raw.aborted) {
         this.log('Request aborted by client')
@@ -196,6 +198,7 @@ export class HeliaServer {
    */
   async fetch ({ request, reply }: RouteHandler): Promise<void> {
     const opController = new AbortController()
+    setMaxListeners(Infinity, opController.signal)
     request.raw.on('close', () => {
       if (request.raw.aborted) {
         this.log('Request aborted by client')
