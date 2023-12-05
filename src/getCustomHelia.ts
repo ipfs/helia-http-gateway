@@ -3,6 +3,7 @@ import { LevelDatastore } from 'datastore-level'
 import { createHelia, type Helia, type HeliaInit } from 'helia'
 import { bitswap, trustlessGateway } from 'helia/block-brokers'
 import { USE_LIBP2P, FILE_BLOCKSTORE_PATH, FILE_DATASTORE_PATH, TRUSTLESS_GATEWAYS, USE_BITSWAP, USE_TRUSTLESS_GATEWAYS } from './constants.js'
+import { getCustomLibp2p } from './getCustomLibp2p.js'
 import type { Libp2p } from '@libp2p/interface'
 
 export async function getCustomHelia (): Promise<Helia> {
@@ -34,9 +35,7 @@ export async function getCustomHelia (): Promise<Helia> {
   }
 
   if (!USE_LIBP2P) {
-    config.libp2p = {
-      start: false
-    }
+    config.libp2p = await getCustomLibp2p({ datastore: config.datastore })
   }
 
   return createHelia(config)
