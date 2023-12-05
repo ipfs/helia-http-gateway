@@ -24,7 +24,8 @@ $ npm run test:gwc
 $ npm run test:gwc-kubo
 
 # terminal 2
-$ npm run test:gwc-helia # you will need to stop and start this one in-between code changes. It's not watching for changes
+# you will need to stop and start this one in-between code changes. It's not watching for changes
+$ DEBUG="helia-http-gateway*" FILE_DATASTORE_PATH=./tmp/datastore npm run test:gwc-helia
 
 # terminal 3
 $ npm run test:gwc
@@ -44,3 +45,4 @@ go run ./cmd/gateway-conformance/main.go test --gateway-url 'http://localhost:80
 1. The IPFS_PATH used is a temporary directory. Your OS should handle removing it when vital, but you can also remove it manually. The path to this directory is printed out when the tests start, and saved in a file at `./scripts/tmp/kubo-path.txt`.
 1. The tests save gateway-conformance fixtures to `./scripts/tmp/fixtures`. You can remove this directory manually if you want to re-run the tests with a fresh set of fixtures.
 1. The results of the gateway-conformance tests are saved to `./gwc-report.json`. This file is overwritten every time the tests are run.
+1. The gateway-conformance tests are flaky and commands & documentation are not up to date. Running commands with CLI flags is supposed to work, and env vars aren't documented, but ENV_VARs are the only way to get the tests to run, but not when ran with docker. See [this issue](https://github.com/ipfs/gateway-conformance/issues/185#issuecomment-1839801366)
