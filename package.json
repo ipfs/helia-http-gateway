@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "aegir lint",
     "build": "aegir build --bundle false",
-    "start": "node dist/src/index.js",
+    "start": "node --trace-warnings dist/src/index.js",
     "start:dev": "npm run build && node dist/src/index.js",
     "start:dev-trace": "npm run build && node --trace-warnings dist/src/index.js",
     "start:dev-doctor": "npm run build && npx clinic doctor --name playwright -- node dist/src/index.js",
@@ -62,6 +62,7 @@
   },
   "dependencies": {
     "@helia/unixfs": "1.x",
+    "@libp2p/interface": "^1.0.1",
     "blockstore-level": "^1.1.4",
     "datastore-level": "^10.1.4",
     "dns-over-http-resolver": "3.0.0",
