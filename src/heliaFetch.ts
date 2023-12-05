@@ -1,4 +1,4 @@
-import { unixfs, type UnixFS } from '@helia/unixfs'
+import { unixfs } from '@helia/unixfs'
 import { MemoryBlockstore } from 'blockstore-core'
 import { MemoryDatastore } from 'datastore-core'
 import debug from 'debug'
@@ -6,7 +6,7 @@ import DOHResolver from 'dns-over-http-resolver'
 import { createHelia, type Helia } from 'helia'
 import { LRUCache } from 'lru-cache'
 import { CID } from 'multiformats/cid'
-import type { UnixFSEntry } from 'ipfs-unixfs-exporter'
+import type { UnixFS, UnixFSStats } from '@helia/unixfs'
 
 const ROOT_FILE_PATTERNS = [
   'index.html',
@@ -83,7 +83,6 @@ export class HeliaFetch {
       blockstore: new MemoryBlockstore(),
       datastore: new MemoryDatastore()
     })
-    // @ts-expect-error - helia@next does not seem to work with helia-unixfs
     this.fs = unixfs(this.node)
     this.log('Helia Setup Complete!')
   }
