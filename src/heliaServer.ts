@@ -124,7 +124,7 @@ export class HeliaServer {
    * Redirects to the subdomain gateway.
    */
   private async handleEntry ({ request, reply }: RouteHandler): Promise<void> {
-    const { query, params } = request
+    const { params } = request
     const { ns: namespace, address, '*': relativePath } = params as EntryParams
     this.log('Handling entry: ', { address, namespace, relativePath })
     if (!USE_SUBDOMAINS) {
@@ -142,10 +142,10 @@ export class HeliaServer {
     const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}/${relativePath ?? ''}`
     // eslint-disable-next-line no-warning-comments
     // TODO: enable support for query params
-    // if (typeof query === 'string' && query.length > 0) {
-    //   this.log('query: ', query)
+    // if (typeof request.query === 'string' && request.query.length > 0) {
+    //   this.log('request.query: ', request.query)
     //   // http://localhost:8090/ipfs/bafybeie72edlprgtlwwctzljf6gkn2wnlrddqjbkxo3jomh4n7omwblxly/dir?format=raw
-    //   finalUrl += encodeURIComponent(`?${new URLSearchParams(query).toString()}`)
+    //   finalUrl += encodeURIComponent(`?${new URLSearchParams(request.query).toString()}`)
     // }
     this.log('relativePath: ', relativePath)
     this.log('Redirecting to final URL:', finalUrl)
