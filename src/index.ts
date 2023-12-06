@@ -1,3 +1,4 @@
+import compress from '@fastify/compress'
 import cors from '@fastify/cors'
 import debug from 'debug'
 import Fastify from 'fastify'
@@ -45,7 +46,9 @@ await app.register(cors, {
   strictPreflight: false,
   preflightContinue: true
 })
-
+await app.register(compress, {
+  global: true
+})
 heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
   app.route({
     method: type,
