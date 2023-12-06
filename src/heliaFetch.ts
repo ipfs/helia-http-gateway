@@ -1,12 +1,13 @@
+import { ipns, type IPNS } from '@helia/ipns'
+import { dnsJsonOverHttps, dnsOverHttps } from '@helia/ipns/dns-resolvers'
+import { dht, pubsub, type IPNSRouting } from '@helia/ipns/routing'
 import { unixfs } from '@helia/unixfs'
-import { MemoryBlockstore } from 'blockstore-core'
-import { MemoryDatastore } from 'datastore-core'
+import { peerIdFromString } from '@libp2p/peer-id'
 import debug from 'debug'
-import DOHResolver from 'dns-over-http-resolver'
-import { createHelia, type Helia } from 'helia'
-import { LRUCache } from 'lru-cache'
 import { CID } from 'multiformats/cid'
+import { getCustomHelia } from './getCustomHelia.js'
 import type { UnixFS, UnixFSStats } from '@helia/unixfs'
+import type { PeerId } from '@libp2p/interface'
 
 const ROOT_FILE_PATTERNS = [
   'index.html',
@@ -15,46 +16,37 @@ const ROOT_FILE_PATTERNS = [
 ]
 
 interface HeliaPathParts {
-  namespace: string
   address: string
+  namespace: string
   relativePath: string
 }
 
-interface HeliaFetchOptions extends HeliaPathParts {
+export interface HeliaFetchOptions extends HeliaPathParts {
   signal?: AbortSignal
-}
-
-interface HeliaFetchConfig {
-  resolveRedirects: boolean
+  cid?: CID | null
+  peerId?: PeerId | null
 }
 
 /**
  * Fetches files from IPFS or IPNS
  */
 export class HeliaFetch {
-  private readonly dohResolver = new DOHResolver()
   private fs!: UnixFS
   private readonly log: debug.Debugger
   private readonly PARSE_PATH_REGEX = /^\/(?<namespace>ip[fn]s)\/(?<address>[^/$]+)(?<relativePath>[^$^?]*)/
   private readonly rootFilePatterns: string[]
-  public node!: Helia
+  public node!: Awaited<ReturnType<typeof getCustomHelia>>
   public ready: Promise<void>
-  private readonly config: HeliaFetchConfig
-  private readonly ipnsResolutionCache = new LRUCache<string, string>({
-    max: 10000,
-    ttl: 1000 * 60 * 60 * 24
-  })
+  private ipns!: IPNS
 
   constructor ({
     node,
     rootFilePatterns = ROOT_FILE_PATTERNS,
-    logger,
-    config = {}
+    logger
   }: {
-    node?: Helia
+    node?: Awaited<ReturnType<typeof getCustomHelia>>
     rootFilePatterns?: string[]
     logger?: debug.Debugger
-    config?: Partial<HeliaFetchConfig>
   } = {}) {
     // setup a logger
     if (logger !== undefined) {
@@ -66,24 +58,37 @@ export class HeliaFetch {
     if (node !== undefined) {
       this.node = node
     }
-    this.config = {
-      resolveRedirects: true,
-      ...config
-    }
     this.rootFilePatterns = rootFilePatterns
-    this.ready = this.init()
-    this.log('Initialized')
+    this.ready = this.init().then(() => { this.log('Initialized') })
   }
 
   /**
    * Initialize the HeliaFetch instance
    */
   async init (): Promise<void> {
-    this.node = this.node ?? await createHelia({
-      blockstore: new MemoryBlockstore(),
-      datastore: new MemoryDatastore()
-    })
+    this.node = this.node ?? await getCustomHelia()
+
     this.fs = unixfs(this.node)
+    const routers: IPNSRouting[] = []
+    if (this.node.libp2p.contentRouting != null) {
+      // @ts-expect-error - types are borked
+      routers.push(dht(this.node))
+    }
+    if (this.node.libp2p.services.pubsub != null) {
+      // @ts-expect-error - types are borked
+      routers.push(pubsub(this.node))
+    }
+    this.ipns = ipns(this.node, {
+      routers,
+      resolvers: [
+        dnsJsonOverHttps('https://mozilla.cloudflare-dns.com/dns-query'),
+        dnsOverHttps('https://mozilla.cloudflare-dns.com/dns-query'),
+        dnsOverHttps('https://cloudflare-dns.com/dns-query'),
+        dnsOverHttps('https://dns.google/dns-query'),
+        dnsOverHttps('https://dns.google/resolve'),
+        dnsOverHttps('dns.quad9.net/dns-query')
+      ]
+    })
     this.log('Helia Setup Complete!')
   }
 
@@ -114,15 +119,15 @@ export class HeliaFetch {
   /**
    * fetch a path from a given namespace and address.
    */
-  public async fetch ({ namespace, address, relativePath, signal }: HeliaFetchOptions): Promise<AsyncIterable<Uint8Array>> {
+  public async fetch ({ namespace, address, relativePath, signal, cid, peerId }: HeliaFetchOptions): Promise<AsyncIterable<Uint8Array>> {
     try {
       await this.ready
       this.log('Processing Fetch:', { namespace, address, relativePath })
       switch (namespace) {
         case 'ipfs':
-          return await this.fetchIpfs(CID.parse(address), { path: relativePath, signal })
+          return await this.fetchIpfs(cid ?? CID.parse(address), { path: relativePath, signal })
         case 'ipns':
-          return await this.fetchIpns(address, { path: relativePath, signal })
+          return await this.fetchIpns(address, { path: relativePath, signal, peerId })
         default:
           throw new Error('Namespace is not valid, provide path as /ipfs/<cid> or /ipns/<path>')
       }
@@ -166,59 +171,35 @@ export class HeliaFetch {
   }
 
   /**
-   * Checks if a redirect is needed and returns either the original address or the redirect address.
-   */
-  private async checkForRedirect (address: string, options?: Parameters<UnixFS['cat']>[1]): Promise<string> {
-    if (!this.config.resolveRedirects) {
-      return address
-    }
-    try {
-      this.log('Checking for redirect of:', address)
-      const redirectCheckResponse = await fetch(`http://${address}`, { method: 'HEAD', redirect: 'manual', ...options })
-      if ([301, 302, 307, 308].includes(redirectCheckResponse.status)) {
-        this.log('Redirect statuscode :', redirectCheckResponse.status)
-        const redirectText = redirectCheckResponse.headers.get('location')
-        if (redirectText == null) {
-          this.log('No location header')
-          return address
-        } else {
-          const redirectUrl = new URL(redirectText)
-          this.log('Redirect found:', redirectUrl.host)
-          return redirectUrl.host
-        }
-      }
-    } catch {
-      // ignore errors on redirect checks
-      this.log('Error checking for redirect for url')
-    }
-    return address
-  }
-
-  /**
    * Fetch IPNS content.
+   *
+   * @todo - Support delegated IPNS resolution from Kubo when testing gateway-conformance
+   * @todo - Support ipns for peerIds: http://localhost:8090/ipns/12D3KooWLQzUv2FHWGVPXTXSZpdHs7oHbXub2G5WC8Tx4NQhyd2d
    */
-  private async fetchIpns (address: string, options?: Parameters<UnixFS['cat']>[1]): Promise<AsyncIterable<Uint8Array>> {
-    if (!this.ipnsResolutionCache.has(address)) {
-      this.log('Fetching from DNS over HTTP:', address)
-      const redirectAddress = await this.checkForRedirect(address)
-      const txtRecords = await this.dohResolver.resolveTxt(`_dnslink.${redirectAddress}`)
-      const pathEntry = txtRecords.find(([record]) => record.startsWith('dnslink='))
-      const path = pathEntry?.[0].replace('dnslink=', '')
-      this.log('Got Path from DNS over HTTP:', path)
-      this.ipnsResolutionCache.set(address, path ?? 'not-found')
-      if (redirectAddress !== address) {
-        this.ipnsResolutionCache.set(redirectAddress, path ?? 'not-found')
+  private async fetchIpns (address: string, { path = '', signal = undefined, peerId }: { path?: string, signal?: AbortSignal, peerId?: PeerId | null }): Promise<AsyncIterable<Uint8Array>> {
+    this.log('Fetching from IPNS:', address, path)
+
+    let resolvedCid = null
+    if (typeof address === 'string' && peerId == null) {
+      try {
+        this.log('Attempting to parse peerId from address:', address)
+        peerId = peerIdFromString(address)
+        this.log('peerId: ', peerId)
+      } catch {
+        // ignoring
       }
-      // we don't do anything with this, but want to fail if it is not a valid path
-      this.parsePath(path ?? '')
     }
-    if (this.ipnsResolutionCache.get(address) === 'not-found') {
-      this.log('No Path found:', address)
-      throw new Error(`Could not resolve IPNS address: ${address}`)
+
+    if (peerId != null) {
+      resolvedCid = await this.ipns.resolve(peerId, { signal })
+    } else if (peerId == null && typeof address === 'string') {
+      resolvedCid = await this.ipns.resolveDns(address, { signal })
+    } else {
+      throw new Error(`Not sure how to handle address input: ${address.toString()}`)
     }
-    const finalPath = `${this.ipnsResolutionCache.get(address)}${options?.path ?? ''}`
-    this.log('Final IPFS path:', finalPath)
-    return this.fetchPath(finalPath)
+
+    this.log('Final IPNS path:', `/ipfs/${resolvedCid.toString()}/${path}`)
+    return this.fetch({ namespace: 'ipfs', address: resolvedCid.toString(), relativePath: path, signal })
   }
 
   /**

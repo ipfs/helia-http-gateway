@@ -1,3 +1,4 @@
+import { join } from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
 import { PORT } from './src/constants.js'
 
@@ -55,7 +56,11 @@ export default defineConfig({
     // Tiros does not re-use the existing server.
     reuseExistingServer: process.env.CI == null,
     env: {
-      DEBUG: process.env.DEBUG ?? ' '
+      DEBUG: process.env.DEBUG ?? ' ',
+      USE_BITSWAP: 'false',
+      // we save to the filesystem so github CI can cache the data.
+      FILE_BLOCKSTORE_PATH: join(process.cwd(), 'test', 'fixtures', 'e2e', 'blockstore'),
+      FILE_DATASTORE_PATH: join(process.cwd(), 'test', 'fixtures', 'e2e', 'datastore')
     }
   }
 })

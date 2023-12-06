@@ -134,3 +134,6 @@ build
 /playwright/.cache/
 screenshots
 .envrc
+scripts/tmp/fixtures
+scripts/tmp/kubo-path.txt
+test/fixtures/e2e

@@ -19,6 +19,25 @@ jobs:
       run: npm ci
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
+
+    # Cache playwright binaries
+    - uses: actions/cache@v3
+      id: playwright-cache
+      with:
+        path: |
+          ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+    - run: npx playwright install --with-deps
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+
+    # Cache datastores
+    - uses: actions/cache@v3
+      id: e2e-datastore-and-blockstore
+      with:
+        path: |
+          ./test/fixtures/e2e
+        key: ${{ runner.os }}-e2e-stores-${{ hashFiles('**/package-lock.json') }}
+
     - name: Run Playwright tests
       run: npm run test:e2e
       env:
