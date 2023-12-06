@@ -73,6 +73,7 @@
     "wait-on": "^7.1.0"
   },
   "dependencies": {
+    "@fastify/compress": "^6.5.0",
     "@fastify/cors": "^8.4.2",
     "@helia/ipns": "^3.0.0",
     "@helia/unixfs": "1.x",
