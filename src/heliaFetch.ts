@@ -16,13 +16,15 @@ const ROOT_FILE_PATTERNS = [
 ]
 
 interface HeliaPathParts {
-  namespace: string
   address: string
+  namespace: string
   relativePath: string
 }
 
-interface HeliaFetchOptions extends HeliaPathParts {
+export interface HeliaFetchOptions extends HeliaPathParts {
   signal?: AbortSignal
+  cid?: CID | null
+  peerId?: PeerId | null
 }
 
 /**
@@ -117,15 +119,15 @@ export class HeliaFetch {
   /**
    * fetch a path from a given namespace and address.
    */
-  public async fetch ({ namespace, address, relativePath, signal }: HeliaFetchOptions): Promise<AsyncIterable<Uint8Array>> {
+  public async fetch ({ namespace, address, relativePath, signal, cid, peerId }: HeliaFetchOptions): Promise<AsyncIterable<Uint8Array>> {
     try {
       await this.ready
       this.log('Processing Fetch:', { namespace, address, relativePath })
       switch (namespace) {
         case 'ipfs':
-          return await this.fetchIpfs(CID.parse(address), { path: relativePath, signal })
+          return await this.fetchIpfs(cid ?? CID.parse(address), { path: relativePath, signal })
         case 'ipns':
-          return await this.fetchIpns(address, { path: relativePath, signal })
+          return await this.fetchIpns(address, { path: relativePath, signal, peerId })
         default:
           throw new Error('Namespace is not valid, provide path as /ipfs/<cid> or /ipns/<path>')
       }
@@ -170,15 +172,19 @@ export class HeliaFetch {
 
   /**
    * Fetch IPNS content.
+   *
+   * @todo - Support delegated IPNS resolution from Kubo when testing gateway-conformance
+   * @todo - Support ipns for peerIds: http://localhost:8090/ipns/12D3KooWLQzUv2FHWGVPXTXSZpdHs7oHbXub2G5WC8Tx4NQhyd2d
    */
-  private async fetchIpns (address: string | PeerId, { path = '', signal = undefined }: { path?: string, signal?: AbortSignal }): Promise<AsyncIterable<Uint8Array>> {
+  private async fetchIpns (address: string, { path = '', signal = undefined, peerId }: { path?: string, signal?: AbortSignal, peerId?: PeerId | null }): Promise<AsyncIterable<Uint8Array>> {
     this.log('Fetching from IPNS:', address, path)
 
-    let peerId = null
     let resolvedCid = null
-    if (typeof address === 'string') {
+    if (typeof address === 'string' && peerId == null) {
       try {
+        this.log('Attempting to parse peerId from address:', address)
         peerId = peerIdFromString(address)
+        this.log('peerId: ', peerId)
       } catch {
         // ignoring
       }

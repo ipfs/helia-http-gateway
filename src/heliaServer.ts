@@ -1,10 +1,10 @@
 import { setMaxListeners } from 'node:events'
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
-import { CID } from 'multiformats'
 import { USE_SUBDOMAINS } from './constants.js'
 import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
 import { getCustomHelia } from './getCustomHelia.js'
-import { HeliaFetch } from './heliaFetch.js'
+import { HeliaFetch, type HeliaFetchOptions } from './heliaFetch.js'
+import { getIpnsAddressDetails } from './ipns-address-utils.js'
 import type debug from 'debug'
 
 const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.com/repos/ipfs/helia/git/ref/tags/helia-v${version}`
@@ -26,17 +26,10 @@ interface EntryParams {
   '*': string
 }
 
-interface ParsedEntryParams {
-  address: string
-  namespace: string
-  relativePath: string
-}
-
 export class HeliaServer {
   private heliaFetch!: HeliaFetch
   private heliaVersionInfo!: { Version: string, Commit: string }
   private readonly HOST_PART_REGEX = /^(?<address>.+)\.(?<namespace>ip[fn]s)\..+$/
-  private readonly HAS_UPPERCASE_REGEX = /[A-Z]/
   private readonly log: debug.Debugger
   public isReady: Promise<void>
   public routes: RouteEntry[]
@@ -122,29 +115,45 @@ export class HeliaServer {
    */
   private async handleEntry ({ request, reply }: RouteHandler): Promise<void> {
     const { params } = request
-    const { ns: namespace, address, '*': relativePath } = params as EntryParams
+    const { ns: namespace, '*': relativePath } = params as EntryParams
+    const { address } = params as EntryParams
     this.log('Handling entry: ', { address, namespace, relativePath })
     if (!USE_SUBDOMAINS) {
       this.log('Subdomains are disabled, fetching without subdomain')
-      return this.fetchWithoutSubdomain({ request, reply })
+      return this.fetchWithoutSubdomain({ request, reply, address, namespace, relativePath })
+    } else {
+      this.log('Subdomains are enabled, redirecting to subdomain')
     }
     if (address.includes('wikipedia')) {
       await reply.code(500).send('Wikipedia is not yet supported. Follow https://github.com/ipfs/helia-http-gateway/issues/35 for more information.')
       return
     }
-    let cidv1Address: string | null = null
-    if (this.HAS_UPPERCASE_REGEX.test(address)) {
-      cidv1Address = CID.parse(address).toV1().toString()
+
+    const { peerId, cid } = getIpnsAddressDetails(address)
+    const cidv1Address = cid?.toString()
+    if (peerId != null) {
+      return this.fetchWithoutSubdomain({ request, reply, address, namespace, relativePath, peerId, cid })
     }
-    const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}/${relativePath ?? ''}`
+
+    const query = (request.query as Record<string, string>)
+    this.log('query: ', query)
     // eslint-disable-next-line no-warning-comments
     // TODO: enable support for query params
-    // if (typeof request.query === 'string' && request.query.length > 0) {
-    //   this.log('request.query: ', request.query)
-    //   // http://localhost:8090/ipfs/bafybeie72edlprgtlwwctzljf6gkn2wnlrddqjbkxo3jomh4n7omwblxly/dir?format=raw
-    //   finalUrl += encodeURIComponent(`?${new URLSearchParams(request.query).toString()}`)
-    // }
+    if (query != null) {
+      // http://localhost:8090/ipfs/bafybeie72edlprgtlwwctzljf6gkn2wnlrddqjbkxo3jomh4n7omwblxly/dir?format=raw
+      // eslint-disable-next-line no-warning-comments
+      // TODO: temporary ipfs gateway spec?
+      // if (query.uri != null) {
+      // // Test = http://localhost:8080/ipns/?uri=ipns%3A%2F%2Fdnslink-subdomain-gw-test.example.org
+      //   this.log('Got URI query parameter: ', query.uri)
+      //   const url = new URL(query.uri)
+      //   address = url.hostname
+      // }
+      // finalUrl += encodeURIComponent(`?${new URLSearchParams(request.query).toString()}`)
+    }
     this.log('relativePath: ', relativePath)
+
+    const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}/${relativePath ?? ''}`
     this.log('Redirecting to final URL:', finalUrl)
     await reply
       .headers({
@@ -166,7 +175,7 @@ export class HeliaServer {
     return result.groups as { address: string, namespace: string }
   }
 
-  async fetchWithoutSubdomain ({ request, reply }: RouteHandler): Promise<void> {
+  async fetchWithoutSubdomain ({ request, reply, peerId, cid, address, namespace, relativePath }: RouteHandler & HeliaFetchOptions): Promise<void> {
     this.log('Fetching without subdomain')
     const opController = new AbortController()
     setMaxListeners(Infinity, opController.signal)
@@ -176,22 +185,22 @@ export class HeliaServer {
         opController.abort()
       }
     })
-    const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
+    // const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
     try {
       await this.isReady
-      await this._fetch({ request, reply, address, namespace, relativePath, signal: opController.signal })
+      await this._fetch({ request, reply, address, namespace, relativePath, signal: opController.signal, peerId, cid })
     } catch (error) {
       this.log('Error requesting content from helia:', error)
       await reply.code(500).send(error)
     }
   }
 
-  async _fetch ({ reply, address, namespace, relativePath, signal }: RouteHandler & ParsedEntryParams & { signal: AbortSignal }): Promise<void> {
+  async _fetch ({ reply, address, namespace, relativePath, signal, cid, peerId }: RouteHandler & HeliaFetchOptions & { signal: AbortSignal }): Promise<void> {
     this.log('Fetching from Helia:', { address, namespace, relativePath })
     let type: string | undefined
     // raw response is needed to respond with the correct content type.
     try {
-      for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath, signal })) {
+      for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath, signal, cid, peerId })) {
         if (type === undefined) {
           type = await parseContentType({ bytes: chunk, path: relativePath })
           // this needs to happen first.

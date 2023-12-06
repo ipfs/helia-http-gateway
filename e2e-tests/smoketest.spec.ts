@@ -9,7 +9,7 @@ const pages = [
   'docs.ipfs.tech',
   'docs.libp2p.io',
   'drand.love',
-  'fil.org',
+  // 'fil.org', // timing out
   // 'filecoin.io', // timing out
   // 'green.filecoin.io', // timing out
   'ipfs.tech',

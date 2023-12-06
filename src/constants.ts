@@ -45,3 +45,8 @@ export const FILE_DATASTORE_PATH = process.env.FILE_DATASTORE_PATH ?? null
  * If not set, we will use a memory blockstore by default.
  */
 export const FILE_BLOCKSTORE_PATH = process.env.FILE_BLOCKSTORE_PATH ?? null
+
+/**
+ * If not set, we will default delegated routing to `https://delegated-ipfs.dev`
+ */
+export const DELEGATED_ROUTING_V1_HOST = process.env.DELEGATED_ROUTING_V1_HOST ?? 'https://delegated-ipfs.dev'

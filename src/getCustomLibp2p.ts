@@ -17,7 +17,7 @@ import { webSockets } from '@libp2p/websockets'
 import { ipnsSelector } from 'ipns/selector'
 import { ipnsValidator } from 'ipns/validator'
 import { createLibp2p as create, type Libp2pOptions } from 'libp2p'
-import { USE_LIBP2P } from './constants.js'
+import { DELEGATED_ROUTING_V1_HOST, USE_LIBP2P } from './constants.js'
 import type { Libp2p, PubSub } from '@libp2p/interface'
 import type { HeliaInit } from 'helia'
 
@@ -97,7 +97,7 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
       upnp: uPnPNATService(),
       pubsub: gossipsub(),
       dcutr: dcutrService(),
-      delegatedRouting: () => createDelegatedRoutingV1HttpApiClient('https://delegated-ipfs.dev'),
+      delegatedRouting: () => createDelegatedRoutingV1HttpApiClient(DELEGATED_ROUTING_V1_HOST),
       dht: kadDHT({
         // don't do DHT server work.
         clientMode: true,

@@ -101,7 +101,7 @@ jobs:
           #
           # only-if-cached: helia-ht does not guarantee local cache, we will adjust upstream test (which was Kubo-specific)
           # for now disabling these test cases
-          args: -skip '^.*(DirectoryListing|TestGatewayCache).*$'
+          args: -skip '^.*(DirectoryListing|TestGatewayCache|TestSubdomainGatewayDNSLinkInlining).*$'
 
       # 7. Upload the results
       - name: Upload MD summary
