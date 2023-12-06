@@ -1,0 +1,13 @@
+diff --git a/node_modules/@helia/delegated-routing-v1-http-api-client/dist/src/client.js b/node_modules/@helia/delegated-routing-v1-http-api-client/dist/src/client.js
+index 9461349..042b83e 100644
+--- a/node_modules/@helia/delegated-routing-v1-http-api-client/dist/src/client.js
++++ b/node_modules/@helia/delegated-routing-v1-http-api-client/dist/src/client.js
+@@ -208,7 +208,7 @@ export class DefaultDelegatedRoutingV1HttpApiClient {
+         if (record.Schema === 'peer') {
+             // Peer schema can have additional, user-defined, fields.
+             record.ID = peerIdFromString(record.ID);
+-            record.Addrs = record.Addrs.map(multiaddr);
++            record.Addrs = record.Addrs?.map(multiaddr) ?? [];
+             record.Protocols = record.Protocols ?? [];
+             return record;
+         }

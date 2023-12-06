@@ -17,8 +17,8 @@ import { webSockets } from '@libp2p/websockets'
 import { ipnsSelector } from 'ipns/selector'
 import { ipnsValidator } from 'ipns/validator'
 import { createLibp2p as create, type Libp2pOptions } from 'libp2p'
-import { DELEGATED_ROUTING_V1_HOST, USE_LIBP2P } from './constants.js'
-import type { Libp2p, PubSub } from '@libp2p/interface'
+import { DELEGATED_ROUTING_V1_HOST, USE_DELEGATED_ROUTING, USE_LIBP2P } from './constants.js'
+import type { Libp2p, PubSub, ServiceMap } from '@libp2p/interface'
 import type { HeliaInit } from 'helia'
 
 interface HeliaGatewayLibp2pServices extends Record<string, unknown> {
@@ -38,6 +38,33 @@ interface HeliaGatewayLibp2pOptions extends Pick<HeliaInit, 'datastore'> {
 }
 
 export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions): Promise<Libp2p<HeliaGatewayLibp2pServices>> {
+  const libp2pServices: ServiceMap = {
+    identify: identifyService(),
+    autoNAT: autoNATService(),
+    upnp: uPnPNATService(),
+    pubsub: gossipsub(),
+    dcutr: dcutrService(),
+    dht: kadDHT({
+      // don't do DHT server work.
+      clientMode: true,
+      validators: {
+        ipns: ipnsValidator
+      },
+      selectors: {
+        ipns: ipnsSelector
+      }
+    }),
+    relay: circuitRelayServer({
+      // don't advertise as a circuitRelay server because we have one job, and that is to:  listen for http requests, maybe fetch content, return http responses.
+      // advertise: true
+    }),
+    ping: pingService(),
+    delegatedRouting: undefined
+  }
+
+  if (USE_DELEGATED_ROUTING) {
+    libp2pServices.delegatedRouting = () => createDelegatedRoutingV1HttpApiClient(DELEGATED_ROUTING_V1_HOST)
+  }
   const options: Libp2pOptions<HeliaGatewayLibp2pServices> = {
     datastore,
     addresses: {
@@ -91,37 +118,14 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
         ]
       })
     ],
-    services: {
-      identify: identifyService(),
-      autoNAT: autoNATService(),
-      upnp: uPnPNATService(),
-      pubsub: gossipsub(),
-      dcutr: dcutrService(),
-      delegatedRouting: () => createDelegatedRoutingV1HttpApiClient(DELEGATED_ROUTING_V1_HOST),
-      dht: kadDHT({
-        // don't do DHT server work.
-        clientMode: true,
-        validators: {
-          ipns: ipnsValidator
-        },
-        selectors: {
-          ipns: ipnsSelector
-        }
-      }),
-      relay: circuitRelayServer({
-        // don't advertise as a circuitRelay server because we have one job, and that is to:  listen for http requests, maybe fetch content, return http responses.
-        // advertise: true
-      }),
-      ping: pingService()
-    }
+    // @ts-expect-error - types are borked
+    services: libp2pServices
   }
 
   if (!USE_LIBP2P) {
     // we should not be running libp2p things
     options.start = false
-    options.services = {}
     options.peerDiscovery = []
-    options.transports = []
   }
 
   return create(options)

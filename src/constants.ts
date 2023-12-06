@@ -47,6 +47,11 @@ export const FILE_DATASTORE_PATH = process.env.FILE_DATASTORE_PATH ?? null
 export const FILE_BLOCKSTORE_PATH = process.env.FILE_BLOCKSTORE_PATH ?? null
 
 /**
+ * Whether to use the delegated routing v1 API. Defaults to true.
+ */
+export const USE_DELEGATED_ROUTING = process.env.USE_DELEGATED_ROUTING !== 'false'
+
+/**
  * If not set, we will default delegated routing to `https://delegated-ipfs.dev`
  */
 export const DELEGATED_ROUTING_V1_HOST = process.env.DELEGATED_ROUTING_V1_HOST ?? 'https://delegated-ipfs.dev'
