@@ -53,7 +53,6 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:
 | `USE_TRUSTLESS_GATEWAYS` | Whether to fetch content from trustless-gateways or not | `true` |
 | `TRUSTLESS_GATEWAYS` | Comma separated list of trusted gateways to fetch content from | [Defined in Helia](https://github.com/ipfs/helia/blob/main/packages/helia/src/block-brokers/trustless-gateway/index.ts) |
 | `USE_LIBP2P` | Whether to use libp2p networking | `true` |
-| `RESOLVE_REDIRECTS` | Whether to resolve redirects before looking up dnslink entries | `true` |
 | `ECHO_HEADERS` | A debug flag to indicate whether you want to output request and response headers | `false` |
 
 <!--

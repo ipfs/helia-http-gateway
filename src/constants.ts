@@ -7,8 +7,6 @@ export const FASTIFY_DEBUG = process.env.FASTIFY_DEBUG ?? ''
 
 export const USE_SUBDOMAINS = process.env.USE_SUBDOMAINS !== 'false'
 
-export const RESOLVE_REDIRECTS = process.env.RESOLVE_REDIRECTS !== 'false'
-
 export const ECHO_HEADERS = process.env.ECHO_HEADERS === 'true'
 
 /**
