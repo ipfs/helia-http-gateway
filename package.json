@@ -7,6 +7,8 @@
     "lint": "aegir lint",
     "build": "aegir build --bundle false",
     "start": "node --trace-warnings dist/src/index.js",
+    "start:env-dr": "node -r dotenv/config --trace-warnings dist/src/index.js dotenv_config_path=./.env-delegated-routing",
+    "start:env-to": "node -r dotenv/config --trace-warnings dist/src/index.js dotenv_config_path=./.env-trustless-only",
     "start:dev": "npm run build && node dist/src/index.js",
     "start:dev-trace": "npm run build && node --trace-warnings dist/src/index.js",
     "start:dev-doctor": "npm run build && npx clinic doctor --name playwright -- node dist/src/index.js",
