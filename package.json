@@ -71,16 +71,15 @@
   },
   "dependencies": {
     "@fastify/cors": "^8.4.2",
+    "@helia/ipns": "^3.0.0",
     "@helia/unixfs": "1.x",
     "@libp2p/interface": "^1.0.1",
     "blockstore-level": "^1.1.4",
     "datastore-level": "^10.1.4",
-    "dns-over-http-resolver": "3.0.0",
     "fastify": "4.24.3",
     "fastify-metrics": "10.3.3",
     "file-type": "18.x",
     "helia": "next",
-    "lru-cache": "10.x",
     "mime-types": "2.x",
     "p-try-each": "1.x",
     "pino-pretty": "10.2.3"
