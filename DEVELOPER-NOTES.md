@@ -29,7 +29,9 @@ $ npm run test:gwc-kubo
 $ DEBUG="helia-http-gateway*" FILE_DATASTORE_PATH=./tmp/datastore npm run test:gwc-helia
 
 # terminal 3
-$ npm run test:gwc
+$ npm run test:gwc-execute
+# To skip some tests, run something like:
+# npm run test:gwc-execute -- -skip '^.*(DirectoryListing|TestGatewayCache|TestSubdomainGatewayDNSLinkInlining|TestGatewaySubdomainAndIPNS).*$'
 
 # OR from the gateway-conformance repo directly with something like:
 go run ./cmd/gateway-conformance/main.go test --gateway-url 'http://localhost:8090' --subdomain-url 'http://localhost:8090' --specs subdomain-ipfs-gateway,subdomain-ipns-gateway --json gwc-report.json -- -timeout 30m
@@ -40,6 +42,7 @@ go run ./cmd/gateway-conformance/main.go test --gateway-url 'http://localhost:80
 
 ### Some callouts
 
+1. You may want to set up an nginx proxy from `http://helia-http-gateway.localhost` to `http://localhost:8090`to help with the gateway-conformance tests. See [this issue](https://github.com/ipfs/gateway-conformance/issues/185)
 1. You may want to run the gateway-conformance tests directly from the repo if you're on a macOS M1 due to some issues with docker and the proxying that the gateway-conformance testing tool uses. If you do this, you'll need to run `make gateway-conformance` in the `gateway-conformance` repo root, and then run the tests with something like `go run ./cmd/gateway-conformance/main.go test --gateway-url 'http://localhost:8090' --subdomain-url 'http://localhost:8090' --specs subdomain-ipfs-gateway,subdomain-ipns-gateway --json gwc-report.json -- -timeout 30m`.
     - If you want to run a specific test, you can pass the `-run` gotest flag. e.g. `go run ./cmd/gateway-conformance/main.go test --gateway-url 'http://localhost:8090' --subdomain-url 'http://localhost:8090' --json gwc-report.json -- -timeout 30m -run 'TestGatewaySubdomains/request_for_example.com%2Fipfs%2F%7BCIDv1%7D_redirects_to_subdomain_%28HTTP_proxy_tunneling_via_CONNECT%29#01'`
 1. The file `./scripts/kubo-init.js` executes kubo using `execa` instead of `ipfsd-ctl` so there may be some gotchas, but it should be as cross-platform and stable as the `execa` library.
