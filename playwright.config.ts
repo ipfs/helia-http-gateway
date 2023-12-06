@@ -3,6 +3,14 @@ import { defineConfig, devices } from '@playwright/test'
 import { PORT } from './src/constants.js'
 
 /**
+ * Run one of the variants of `npm run start` by setting the PLAYWRIGHT_START_CMD_MOD environment variable.
+ *
+ * For example, to run `npm run start:dev-doctor`: `PLAYWRIGHT_START_CMD_MOD=:dev-doctor npm run test:e2e`
+ * For example, to run `npm run start:env-to`: `PLAYWRIGHT_START_CMD_MOD=:env-to npm run test:e2e`
+ */
+const PLAYWRIGHT_START_CMD_MOD = process.env.PLAYWRIGHT_START_CMD_MOD ?? ''
+
+/**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
@@ -51,13 +59,12 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: (process.env.DOCTOR != null) ? 'npm run start:dev-doctor' : 'npm run start:dev',
+    command: `npm run build && npm run start${PLAYWRIGHT_START_CMD_MOD}`,
     port: PORT,
     // Tiros does not re-use the existing server.
     reuseExistingServer: process.env.CI == null,
     env: {
       DEBUG: process.env.DEBUG ?? ' ',
-      USE_BITSWAP: 'false',
       // we save to the filesystem so github CI can cache the data.
       FILE_BLOCKSTORE_PATH: join(process.cwd(), 'test', 'fixtures', 'e2e', 'blockstore'),
       FILE_DATASTORE_PATH: join(process.cwd(), 'test', 'fixtures', 'e2e', 'datastore')
