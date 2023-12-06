@@ -8,7 +8,6 @@ import { circuitRelayTransport, circuitRelayServer, type CircuitRelayService } f
 import { dcutr as dcutrService } from '@libp2p/dcutr'
 import { identify as identifyService, type Identify } from '@libp2p/identify'
 import { type DualKadDHT, kadDHT } from '@libp2p/kad-dht'
-// import { mdns } from '@libp2p/mdns'
 import { mplex } from '@libp2p/mplex'
 import { ping as pingService, type PingService } from '@libp2p/ping'
 import { tcp } from '@libp2p/tcp'
@@ -21,7 +20,6 @@ import { createLibp2p as create, type Libp2pOptions } from 'libp2p'
 import { USE_LIBP2P } from './constants.js'
 import type { Libp2p, PubSub } from '@libp2p/interface'
 import type { HeliaInit } from 'helia'
-// import { peerDiscovery, PeerDiscovery } from '@libp2p/peer-discovery'
 
 interface HeliaGatewayLibp2pServices extends Record<string, unknown> {
   dht: DualKadDHT
@@ -40,14 +38,11 @@ interface HeliaGatewayLibp2pOptions extends Pick<HeliaInit, 'datastore'> {
 }
 
 export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions): Promise<Libp2p<HeliaGatewayLibp2pServices>> {
-  let options: Libp2pOptions<HeliaGatewayLibp2pServices> = {
+  const options: Libp2pOptions<HeliaGatewayLibp2pServices> = {
     datastore,
     addresses: {
       listen: [
         // helia-http-gateway is not dialable, we're only retrieving data from IPFS network, and then providing that data via a web2 http interface.
-        // '/ip4/0.0.0.0/tcp/0',
-        // '/ip6/::/tcp/0',
-        // '/webrtc'
       ]
     },
     connectionManager: {
@@ -58,7 +53,7 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
     },
     transports: [
       circuitRelayTransport({
-        discoverRelays: 1
+        discoverRelays: USE_LIBP2P ? 1 : 0
       }),
       tcp(),
       /**
@@ -123,13 +118,10 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
 
   if (!USE_LIBP2P) {
     // we should not be running libp2p things
-    options = {
-      ...options,
-      start: false,
-      addresses: {
-        listen: []
-      }
-    }
+    options.start = false
+    options.services = {}
+    options.peerDiscovery = []
+    options.transports = []
   }
 
   return create(options)

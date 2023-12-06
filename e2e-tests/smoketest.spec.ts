@@ -36,7 +36,7 @@ test.beforeEach(async ({ context }) => {
 })
 
 test.afterEach(async ({ page }) => {
-  test.setTimeout(30000)
+  test.setTimeout(2 * 60 * 1000) // 2 minutes
   const result = await page.request.post(`http://localhost:${PORT}/api/v0/repo/gc`)
   expect(result?.status()).toBe(200)
 

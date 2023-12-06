@@ -55,7 +55,7 @@
   },
   "homepage": "https://github.com/ipfs/helia-http-gateway#readme",
   "devDependencies": {
-    "@playwright/test": "^1.39.0",
+    "@playwright/test": "^1.40.1",
     "@types/mime-types": "2.x",
     "@types/node": "20.x",
     "aegir": "41.x",
