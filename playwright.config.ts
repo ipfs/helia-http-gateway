@@ -58,6 +58,7 @@ export default defineConfig({
     env: {
       DEBUG: process.env.DEBUG ?? ' ',
       USE_BITSWAP: 'false',
+      // we save to the filesystem so github CI can cache the data.
       FILE_BLOCKSTORE_PATH: join(process.cwd(), 'test', 'fixtures', 'e2e', 'blockstore'),
       FILE_DATASTORE_PATH: join(process.cwd(), 'test', 'fixtures', 'e2e', 'datastore')
     }

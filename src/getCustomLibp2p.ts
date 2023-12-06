@@ -58,13 +58,13 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
       // don't advertise as a circuitRelay server because we have one job, and that is to:  listen for http requests, maybe fetch content, return http responses.
       // advertise: true
     }),
-    ping: pingService(),
-    delegatedRouting: undefined
+    ping: pingService()
   }
 
   if (USE_DELEGATED_ROUTING) {
     libp2pServices.delegatedRouting = () => createDelegatedRoutingV1HttpApiClient(DELEGATED_ROUTING_V1_HOST)
   }
+
   const options: Libp2pOptions<HeliaGatewayLibp2pServices> = {
     datastore,
     addresses: {
@@ -102,11 +102,6 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
       mplex()
     ],
     peerDiscovery: [
-      // (components): PeerDiscovery => ({
-      //   get [peerDiscovery] () {
-      //     components.services.
-      //   }
-      // }),
       // mdns(), // disable mdns while optimizing for performance.
       bootstrap({
         list: [
@@ -125,7 +120,7 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
   if (!USE_LIBP2P) {
     // we should not be running libp2p things
     options.start = false
-    options.peerDiscovery = []
+    // options.peerDiscovery = []
   }
 
   return create(options)

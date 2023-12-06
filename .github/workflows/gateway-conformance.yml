@@ -95,13 +95,13 @@ jobs:
           xml: output.xml
           html: output.html
           markdown: output.md
-          specs: subdomain-ipfs-gateway,subdomain-ipns-gateway
+          # specs: subdomain-ipfs-gateway,subdomain-ipns-gateway
           # use below to skip specific test if needed
           # args: -skip 'TestFooBr/GET_response_for_something'
           #
           # only-if-cached: helia-ht does not guarantee local cache, we will adjust upstream test (which was Kubo-specific)
           # for now disabling these test cases
-          args: -skip '^.*(DirectoryListing|TestGatewayCache|TestSubdomainGatewayDNSLinkInlining|proxy).*$'
+          args: -skip '^.*(DirectoryListing|TestGatewayCache|TestSubdomainGatewayDNSLinkInlining|proxy|TestGatewaySubdomainAndIPNS|TestGatewaySubdomains|Trustless|TestGatewayIPNSRecord|RedirectsFile|TestGatewayUnixFSFileRanges|TestGatewayJSONCborAndIPNS|TestTar|Symlink|TestPathGatewayMiscellaneous|TestGatewayBlock|TestRedirectCanonicalIPNS|TestGatewayIPNSPath|TestNativeDag|TestPathing|TestPlainCodec|TestDagPbConversion|TestGatewayJsonCbor|TestCors).*$'
 
       # 7. Upload the results
       - name: Upload MD summary

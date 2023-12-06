@@ -64,6 +64,13 @@ TODO: currently broken when used in docker, but they work when running locally (
 
 See the source of truth for all `process.env.<name>` environment variables at [src/constants.ts](src/constants.ts).
 
+You can also see some recommended environment variable configurations at:
+
+- [./.env-all](./.env-all)
+- [./.env-delegated-routing](./.env-delegated-routing)
+- [./.env-gwc](./.env-gwc)
+- [./.env-trustless-only](./.env-trustless-only)
+
 ### Running with custom configurations
 
 Note that any of the following calls to docker can be replaced with something like `MY_ENV_VAR="MY_VALUE" npm run start`
