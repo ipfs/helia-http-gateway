@@ -1,0 +1,15 @@
+diff --git a/node_modules/@fastify/cors/index.js b/node_modules/@fastify/cors/index.js
+index f113e81..1b3f055 100644
+--- a/node_modules/@fastify/cors/index.js
++++ b/node_modules/@fastify/cors/index.js
+@@ -175,7 +175,9 @@ function addCorsHeadersHandler (fastify, options, req, reply, next) {
+ 
+     addCorsHeaders(req, reply, resolvedOriginOption, options)
+ 
+-    if (req.raw.method === 'OPTIONS' && options.preflight === true) {
++    // gateway conformance tests require preflight headers even for non OPTIONS requests
++    // if (req.raw.method === 'OPTIONS' && options.preflight === true) {
++    if (options.preflight === true) {
+       // Strict mode enforces the required headers for preflight
+       if (options.strictPreflight === true && (!req.headers.origin || !req.headers['access-control-request-method'])) {
+         reply.status(400).type('text/plain').send('Invalid Preflight Request')
