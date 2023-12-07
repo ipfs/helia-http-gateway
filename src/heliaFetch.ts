@@ -85,8 +85,8 @@ export class HeliaFetch {
         dnsOverHttps('https://mozilla.cloudflare-dns.com/dns-query'),
         dnsOverHttps('https://cloudflare-dns.com/dns-query'),
         dnsOverHttps('https://dns.google/dns-query'),
-        dnsOverHttps('https://dns.google/resolve'),
-        dnsOverHttps('dns.quad9.net/dns-query')
+        dnsJsonOverHttps('https://dns.google/resolve'),
+        dnsOverHttps('https://dns.quad9.net/dns-query')
       ]
     })
     this.log('Helia Setup Complete!')
