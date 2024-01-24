@@ -2,7 +2,6 @@ import { setMaxListeners } from 'node:events'
 import { createVerifiedFetch } from '@helia/verified-fetch'
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { USE_SUBDOMAINS } from './constants.js'
-// import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
 import { getCustomHelia } from './getCustomHelia.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
 import type { PeerId } from '@libp2p/interface'
@@ -262,7 +261,7 @@ export class HeliaServer {
     for (const [headerName, headerValue] of verifiedFetchResponse.headers.entries()) {
       headers[headerName] = headerValue
     }
-    // TODO: pipe the response instead
+    // Fastify really does not like streams despite what the documentation and github issues say.
     const reader = verifiedFetchResponse.body.getReader()
     reply.raw.writeHead(verifiedFetchResponse.status, headers)
     try {
