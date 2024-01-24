@@ -3,7 +3,7 @@ import cors from '@fastify/cors'
 import debug from 'debug'
 import Fastify from 'fastify'
 import metricsPlugin from 'fastify-metrics'
-import { HOST, PORT, METRICS, ECHO_HEADERS } from './constants.js'
+import { HOST, PORT, METRICS, ECHO_HEADERS, FASTIFY_DEBUG } from './constants.js'
 import { HeliaServer, type RouteEntry } from './heliaServer.js'
 
 const logger = debug('helia-http-gateway')

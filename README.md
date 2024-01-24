@@ -54,6 +54,7 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:
 | `TRUSTLESS_GATEWAYS` | Comma separated list of trusted gateways to fetch content from | [Defined in Helia](https://github.com/ipfs/helia/blob/main/packages/helia/src/block-brokers/trustless-gateway/index.ts) |
 | `USE_LIBP2P` | Whether to use libp2p networking | `true` |
 | `ECHO_HEADERS` | A debug flag to indicate whether you want to output request and response headers | `false` |
+| `USE_DELEGATED_ROUTING` | Whether to use the delegated routing v1 API  | `true` |
 | `DELEGATED_ROUTING_V1_HOST` | Hostname to use for delegated routing v1 | `https://delegated-ipfs.dev` |
 
 <!--

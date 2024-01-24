@@ -1,10 +1,12 @@
 import { bitswap, trustlessGateway } from '@helia/block-brokers'
 import { createHeliaHTTP } from '@helia/http'
+import { delegatedHTTPRouting } from '@helia/routers'
+import { type HeliaInit } from '@helia/utils'
 import { LevelBlockstore } from 'blockstore-level'
 import { LevelDatastore } from 'datastore-level'
 import { createHelia } from 'helia'
-import { FILE_BLOCKSTORE_PATH, FILE_DATASTORE_PATH, TRUSTLESS_GATEWAYS, USE_BITSWAP, USE_LIBP2P, USE_TRUSTLESS_GATEWAYS } from './constants.js'
-// import { getCustomLibp2p } from './getCustomLibp2p.js'
+import { DELEGATED_ROUTING_V1_HOST, FILE_BLOCKSTORE_PATH, FILE_DATASTORE_PATH, TRUSTLESS_GATEWAYS, USE_BITSWAP, USE_DELEGATED_ROUTING, USE_LIBP2P, USE_TRUSTLESS_GATEWAYS } from './constants.js'
+import { getCustomLibp2p } from './getCustomLibp2p.js'
 import type { Helia } from '@helia/interface'
 // import type { Libp2p, ServiceMap } from '@libp2p/interface'
 
@@ -33,17 +35,23 @@ export async function getCustomHelia (): Promise<Helia> {
   }
 
   if (USE_LIBP2P || USE_BITSWAP) {
-    // config.libp2p = await getCustomLibp2p({ datastore: config.datastore })
     return createHelia({
+      libp2p: await getCustomLibp2p({ datastore }),
       blockstore,
       datastore,
       blockBrokers
     }) as unknown as Promise<Helia>
   }
 
+  const routers: HeliaInit['routers'] = []
+  if (USE_DELEGATED_ROUTING) {
+    routers.push(delegatedHTTPRouting(DELEGATED_ROUTING_V1_HOST))
+  }
+
   return createHeliaHTTP({
     blockstore,
     datastore,
-    blockBrokers
+    blockBrokers,
+    routers
   }) as unknown as Promise<Helia>
 }
