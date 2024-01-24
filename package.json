@@ -80,7 +80,7 @@
     "@helia/interface": "^3.0.1-4836d52",
     "@helia/ipns": "^4.0.0-4836d52",
     "@helia/unixfs": "^2.0.1-4836d52",
-    "@helia/verified-fetch": "file:../helia/packages/verified-fetch/helia-verified-fetch-0.0.0.tgz",
+    "@helia/verified-fetch": "file:helia-verified-fetch-0.0.0.tgz",
     "@libp2p/circuit-relay-v2": "^1.0.12",
     "@libp2p/interface": "^1.0.1",
     "blockstore-level": "^1.1.4",
