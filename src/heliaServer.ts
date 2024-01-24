@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions  */
 import { setMaxListeners } from 'node:events'
 import { createVerifiedFetch } from '@helia/verified-fetch'
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
@@ -198,7 +199,7 @@ export class HeliaServer {
     const opController = new AbortController()
     setMaxListeners(Infinity, opController.signal)
     request.raw.on('close', () => {
-      if (request.raw.aborted === true) {
+      if (request.raw.aborted) {
         this.log('Request aborted by client')
         opController.abort()
       }
@@ -240,19 +241,22 @@ export class HeliaServer {
     const verifiedFetchResponse = await this.heliaFetch(url, { signal })
     this.log('Got verified-fetch response: ', verifiedFetchResponse.status)
 
-    if (verifiedFetchResponse.ok === false) {
+    if (!verifiedFetchResponse.ok) {
       this.log('verified-fetch response not ok: ', verifiedFetchResponse.status)
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       reply.code(verifiedFetchResponse.status).send(verifiedFetchResponse.statusText)
       return
     }
     const contentType = verifiedFetchResponse.headers.get('content-type')
     if (contentType == null) {
       this.log('verified-fetch response has no content-type')
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       reply.code(200).send(verifiedFetchResponse.body)
       return
     }
     if (verifiedFetchResponse.body == null) {
       this.log('verified-fetch response has no body')
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       reply.code(501).send('empty')
       return
     }
@@ -304,7 +308,7 @@ export class HeliaServer {
         namespace = hostParts.namespace
       } catch (e) {
         // not a valid request, should have been caught prior to calling this method.
-        return await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
+        return reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
       }
       if (address.includes('wikipedia')) {
         await reply.code(500).send('Wikipedia is not yet supported. Follow https://github.com/ipfs/helia-http-gateway/issues/35 for more information.')

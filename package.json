@@ -41,6 +41,7 @@
   "eslintConfig": {
     "extends": "ipfs",
     "parserOptions": {
+      "project": true,
       "sourceType": "module"
     }
   },
@@ -60,7 +61,7 @@
     "@playwright/test": "^1.40.1",
     "@types/mime-types": "2.x",
     "@types/node": "20.x",
-    "aegir": "41.x",
+    "aegir": "42.x",
     "clinic": "^13.0.0",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
