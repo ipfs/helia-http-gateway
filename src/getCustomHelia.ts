@@ -1,18 +1,17 @@
+import { bitswap, trustlessGateway } from '@helia/block-brokers'
+import { createHeliaHTTP } from '@helia/http'
 import { LevelBlockstore } from 'blockstore-level'
 import { LevelDatastore } from 'datastore-level'
-import { createHelia, type Helia, type HeliaInit } from 'helia'
-import { bitswap, trustlessGateway } from 'helia/block-brokers'
-import { FILE_BLOCKSTORE_PATH, FILE_DATASTORE_PATH, TRUSTLESS_GATEWAYS, USE_BITSWAP, USE_TRUSTLESS_GATEWAYS } from './constants.js'
-import { getCustomLibp2p } from './getCustomLibp2p.js'
-import type { Libp2p } from '@libp2p/interface'
+import { createHelia } from 'helia'
+import { FILE_BLOCKSTORE_PATH, FILE_DATASTORE_PATH, TRUSTLESS_GATEWAYS, USE_BITSWAP, USE_LIBP2P, USE_TRUSTLESS_GATEWAYS } from './constants.js'
+// import { getCustomLibp2p } from './getCustomLibp2p.js'
+import type { Helia } from '@helia/interface'
+// import type { Libp2p, ServiceMap } from '@libp2p/interface'
 
 export async function getCustomHelia (): Promise<Helia> {
-  const config: Partial<HeliaInit<Libp2p<any>>> = {
-    blockBrokers: []
-  }
-
+  const blockBrokers: Array<ReturnType<typeof trustlessGateway | typeof bitswap>> = []
   if (USE_BITSWAP) {
-    config.blockBrokers?.push(bitswap())
+    blockBrokers.push(bitswap())
   }
 
   if (USE_TRUSTLESS_GATEWAYS) {
@@ -20,21 +19,31 @@ export async function getCustomHelia (): Promise<Helia> {
     if (TRUSTLESS_GATEWAYS != null) {
       gateway = trustlessGateway({ gateways: TRUSTLESS_GATEWAYS })
     }
-    config.blockBrokers?.push(gateway)
+    blockBrokers.push(gateway)
   }
 
-  /**
-   * TODO: Unblock support for custom blockstores and datastores, currently not working with docker due to volume mounting requirements.
-   */
+  let blockstore: LevelBlockstore | undefined
   if (FILE_BLOCKSTORE_PATH != null) {
-    config.blockstore = new LevelBlockstore(FILE_BLOCKSTORE_PATH)
+    blockstore = new LevelBlockstore(FILE_BLOCKSTORE_PATH)
   }
 
+  let datastore: LevelDatastore | undefined
   if (FILE_DATASTORE_PATH != null) {
-    config.datastore = new LevelDatastore(FILE_DATASTORE_PATH)
+    datastore = new LevelDatastore(FILE_DATASTORE_PATH)
   }
 
-  config.libp2p = await getCustomLibp2p({ datastore: config.datastore })
+  if (USE_LIBP2P || USE_BITSWAP) {
+    // config.libp2p = await getCustomLibp2p({ datastore: config.datastore })
+    return createHelia({
+      blockstore,
+      datastore,
+      blockBrokers
+    }) as unknown as Promise<Helia>
+  }
 
-  return createHelia(config)
+  return createHeliaHTTP({
+    blockstore,
+    datastore,
+    blockBrokers
+  }) as unknown as Promise<Helia>
 }

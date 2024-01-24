@@ -1,11 +1,14 @@
 import { setMaxListeners } from 'node:events'
+import { createVerifiedFetch } from '@helia/verified-fetch'
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { USE_SUBDOMAINS } from './constants.js'
-import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
+// import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
 import { getCustomHelia } from './getCustomHelia.js'
-import { HeliaFetch, type HeliaFetchOptions } from './heliaFetch.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
+import type { PeerId } from '@libp2p/interface'
 import type debug from 'debug'
+import type { Helia } from 'helia'
+import type { CID } from 'multiformats/cid'
 
 const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.com/repos/ipfs/helia/git/ref/tags/helia-v${version}`
 
@@ -26,30 +29,47 @@ interface EntryParams {
   '*': string
 }
 
+interface HeliaPathParts {
+  address: string
+  namespace: string
+  relativePath: string
+}
+
+interface HeliaFetchOptions extends HeliaPathParts {
+  signal?: AbortSignal
+  cid?: CID | null
+  peerId?: PeerId | null
+}
+
 export class HeliaServer {
-  private heliaFetch!: HeliaFetch
+  private heliaFetch!: Awaited<ReturnType<typeof createVerifiedFetch>>
   private heliaVersionInfo!: { Version: string, Commit: string }
   private readonly HOST_PART_REGEX = /^(?<address>.+)\.(?<namespace>ip[fn]s)\..+$/
   private readonly log: debug.Debugger
   public isReady: Promise<void>
   public routes: RouteEntry[]
+  private heliaNode!: Helia
 
   constructor (logger: debug.Debugger) {
     this.log = logger.extend('server')
     this.isReady = this.init()
+      .then(() => {
+        this.log('Initialized')
+      })
+      .catch((error) => {
+        this.log('Error initializing:', error)
+        throw error
+      })
     this.routes = []
-    this.log('Initialized')
   }
 
   /**
    * Initialize the HeliaServer instance
    */
   async init (): Promise<void> {
-    this.heliaFetch = new HeliaFetch({
-      logger: this.log,
-      node: await getCustomHelia()
-    })
-    await this.heliaFetch.ready
+    this.heliaNode = await getCustomHelia()
+    this.heliaFetch = await createVerifiedFetch(this.heliaNode)
+
     // eslint-disable-next-line no-console
     console.log('Helia Started!')
     this.routes = [
@@ -115,8 +135,7 @@ export class HeliaServer {
    */
   private async handleEntry ({ request, reply }: RouteHandler): Promise<void> {
     const { params } = request
-    const { ns: namespace, '*': relativePath } = params as EntryParams
-    const { address } = params as EntryParams
+    const { ns: namespace, '*': relativePath, address } = params as EntryParams
     this.log('Handling entry: ', { address, namespace, relativePath })
     if (!USE_SUBDOMAINS) {
       this.log('Subdomains are disabled, fetching without subdomain')
@@ -130,10 +149,10 @@ export class HeliaServer {
     }
 
     const { peerId, cid } = getIpnsAddressDetails(address)
-    const cidv1Address = cid?.toString()
     if (peerId != null) {
       return this.fetchWithoutSubdomain({ request, reply, address, namespace, relativePath, peerId, cid })
     }
+    const cidv1Address = cid?.toString()
 
     const query = (request.query as Record<string, string>)
     this.log('query: ', query)
@@ -180,7 +199,7 @@ export class HeliaServer {
     const opController = new AbortController()
     setMaxListeners(Infinity, opController.signal)
     request.raw.on('close', () => {
-      if (request.raw.aborted) {
+      if (request.raw.aborted === true) {
         this.log('Request aborted by client')
         opController.abort()
       }
@@ -195,26 +214,68 @@ export class HeliaServer {
     }
   }
 
+  /**
+   * Convert HeliaFetchOptions to a URL string compatible with `@helia/verified-fetch`
+   */
+  #getUrlFromArgs ({ address, namespace, relativePath, peerId, cid }: HeliaFetchOptions): string {
+    // if (peerId != null) {
+    //   // we have a peerId, so we need to pass `ipns://<peerId>/relativePath` to @helia/verified-fetch.
+    //   return `${namespace}://${peerId.toString()}/${relativePath}`
+    // }
+    if (relativePath == null || relativePath === '' || relativePath === '/') {
+      // we have a CID, so we need to pass `ipfs://<cid>` to @helia/verified-fetch.
+      return `${namespace}://${address}`
+    }
+    return `${namespace}://${address}/${relativePath}`
+  }
+
+  /**
+   * Fetches a content for a subdomain, which basically queries delegated routing API and then fetches the path from helia.
+   */
   async _fetch ({ reply, address, namespace, relativePath, signal, cid, peerId }: RouteHandler & HeliaFetchOptions & { signal: AbortSignal }): Promise<void> {
     this.log('Fetching from Helia:', { address, namespace, relativePath })
-    let type: string | undefined
-    // raw response is needed to respond with the correct content type.
+    // let type: string | undefined
+    const url = this.#getUrlFromArgs({ address, namespace, relativePath, peerId, cid })
+    this.log('got URL for verified-fetch: ', url)
+
+    const verifiedFetchResponse = await this.heliaFetch(url, { signal })
+    this.log('Got verified-fetch response: ', verifiedFetchResponse.status)
+
+    if (verifiedFetchResponse.ok === false) {
+      this.log('verified-fetch response not ok: ', verifiedFetchResponse.status)
+      reply.code(verifiedFetchResponse.status).send(verifiedFetchResponse.statusText)
+      return
+    }
+    const contentType = verifiedFetchResponse.headers.get('content-type')
+    if (contentType == null) {
+      this.log('verified-fetch response has no content-type')
+      reply.code(200).send(verifiedFetchResponse.body)
+      return
+    }
+    if (verifiedFetchResponse.body == null) {
+      this.log('verified-fetch response has no body')
+      reply.code(501).send('empty')
+      return
+    }
+
+    const headers: Record<string, string> = {}
+    for (const [headerName, headerValue] of verifiedFetchResponse.headers.entries()) {
+      headers[headerName] = headerValue
+    }
+    // TODO: pipe the response instead
+    const reader = verifiedFetchResponse.body.getReader()
+    reply.raw.writeHead(verifiedFetchResponse.status, headers)
     try {
-      for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath, signal, cid, peerId })) {
-        if (type === undefined) {
-          type = await parseContentType({ bytes: chunk, path: relativePath })
-          // this needs to happen first.
-          reply.raw.writeHead(200, {
-            'Content-Type': type ?? DEFAULT_MIME_TYPE,
-            'Cache-Control': 'public, max-age=31536000, immutable'
-          })
+      let done = false
+      while (!done) {
+        const { done: _done, value } = await reader.read()
+        if (value != null) {
+          reply.raw.write(Buffer.from(value))
         }
-        reply.raw.write(Buffer.from(chunk))
+        done = _done
       }
     } catch (err) {
-      this.log('Error fetching from Helia:', err)
-      // TODO: If we failed here and we already wrote the headers, we need to handle that.
-      // await reply.code(500)
+      this.log('Error reading response:', err)
     } finally {
       reply.raw.end()
     }
@@ -303,7 +364,7 @@ export class HeliaServer {
   async gc ({ reply }: RouteHandler): Promise<void> {
     await this.isReady
     this.log('GCing node')
-    await this.heliaFetch.node?.gc({ signal: AbortSignal.timeout(20000) })
+    await this.heliaNode?.gc({ signal: AbortSignal.timeout(20000) })
     await reply.code(200).send('OK')
   }
 
