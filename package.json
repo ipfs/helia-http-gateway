@@ -83,7 +83,7 @@
     "@helia/routers": "^0.0.0-4836d52",
     "@helia/unixfs": "^2.0.1-4836d52",
     "@helia/utils": "^0.0.0-4836d52",
-    "@helia/verified-fetch": "file:helia-verified-fetch-0.0.0.tgz",
+    "@helia/verified-fetch": "next",
     "@libp2p/circuit-relay-v2": "^1.0.12",
     "@libp2p/interface": "^1.0.1",
     "@libp2p/kad-dht": "^12.0.4",
