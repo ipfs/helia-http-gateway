@@ -4,6 +4,7 @@ import { createVerifiedFetch } from '@helia/verified-fetch'
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { USE_SUBDOMAINS } from './constants.js'
 import { contentTypeParser } from './content-type-parser.js'
+import { dnsLinkLabelDecoder, isDnsLabel } from './dns-link-labels.js'
 import { getCustomHelia } from './getCustomHelia.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
 import type { PeerId } from '@libp2p/interface'
@@ -219,13 +220,11 @@ export class HeliaServer {
    * Convert HeliaFetchOptions to a URL string compatible with `@helia/verified-fetch`
    */
   #getUrlFromArgs ({ address, namespace, relativePath, peerId, cid }: HeliaFetchOptions): string {
-    // if (peerId != null) {
-    //   // we have a peerId, so we need to pass `ipns://<peerId>/relativePath` to @helia/verified-fetch.
-    //   return `${namespace}://${peerId.toString()}/${relativePath}`
-    // }
-    if (relativePath == null || relativePath === '' || relativePath === '/') {
-      // we have a CID, so we need to pass `ipfs://<cid>` to @helia/verified-fetch.
-      return `${namespace}://${address}`
+    // The if a DNSLink returned here needs to be encoded per https://specs.ipfs.tech/http-gateways/subdomain-gateway/#host-request-header
+    if (namespace === 'ipns') {
+      if (isDnsLabel(address)) {
+        address = dnsLinkLabelDecoder(address)
+      }
     }
     return `${namespace}://${address}/${relativePath}`
   }
