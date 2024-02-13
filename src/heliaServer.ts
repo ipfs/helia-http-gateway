@@ -3,6 +3,7 @@ import { setMaxListeners } from 'node:events'
 import { createVerifiedFetch } from '@helia/verified-fetch'
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { USE_SUBDOMAINS } from './constants.js'
+import { contentTypeParser } from './content-type-parser.js'
 import { getCustomHelia } from './getCustomHelia.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
 import type { PeerId } from '@libp2p/interface'
@@ -68,7 +69,7 @@ export class HeliaServer {
    */
   async init (): Promise<void> {
     this.heliaNode = await getCustomHelia()
-    this.heliaFetch = await createVerifiedFetch(this.heliaNode)
+    this.heliaFetch = await createVerifiedFetch(this.heliaNode, { contentTypeParser })
 
     // eslint-disable-next-line no-console
     console.log('Helia Started!')

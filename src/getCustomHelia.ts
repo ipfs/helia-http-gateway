@@ -8,7 +8,6 @@ import { createHelia } from 'helia'
 import { DELEGATED_ROUTING_V1_HOST, FILE_BLOCKSTORE_PATH, FILE_DATASTORE_PATH, TRUSTLESS_GATEWAYS, USE_BITSWAP, USE_DELEGATED_ROUTING, USE_LIBP2P, USE_TRUSTLESS_GATEWAYS } from './constants.js'
 import { getCustomLibp2p } from './getCustomLibp2p.js'
 import type { Helia } from '@helia/interface'
-// import type { Libp2p, ServiceMap } from '@libp2p/interface'
 
 export async function getCustomHelia (): Promise<Helia> {
   const blockBrokers: Array<ReturnType<typeof trustlessGateway | typeof bitswap>> = []
@@ -24,14 +23,14 @@ export async function getCustomHelia (): Promise<Helia> {
     blockBrokers.push(gateway)
   }
 
-  let blockstore: LevelBlockstore | undefined
+  let blockstore: HeliaInit['blockstore'] | undefined
   if (FILE_BLOCKSTORE_PATH != null) {
-    blockstore = new LevelBlockstore(FILE_BLOCKSTORE_PATH)
+    blockstore = new LevelBlockstore(FILE_BLOCKSTORE_PATH) as HeliaInit['blockstore']
   }
 
-  let datastore: LevelDatastore | undefined
+  let datastore: HeliaInit['datastore'] | undefined
   if (FILE_DATASTORE_PATH != null) {
-    datastore = new LevelDatastore(FILE_DATASTORE_PATH)
+    datastore = new LevelDatastore(FILE_DATASTORE_PATH) as HeliaInit['datastore']
   }
 
   if (USE_LIBP2P || USE_BITSWAP) {
