@@ -4,7 +4,8 @@ export default {
     ignore: [
       'dotenv',
       'typescript',
-      'wait-on'
+      'wait-on',
+      'pino-pretty' // implicit dependency for fastify logging
     ],
     productionIgnorePatterns: [
       '.aegir.js',

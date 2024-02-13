@@ -108,6 +108,7 @@
     "helia": "^4.0.1",
     "ipns": "^9.0.0",
     "libp2p": "^1.2.3",
-    "multiformats": "^13.0.1"
+    "multiformats": "^13.0.1",
+    "pino-pretty": "^10.3.1"
   }
 }
