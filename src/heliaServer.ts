@@ -39,10 +39,10 @@ export class HeliaServer {
     this.log = logger.forComponent('server')
     this.isReady = this.init()
       .then(() => {
-        this.log('Initialized')
+        this.log('initialized')
       })
       .catch((error) => {
-        this.log('Error initializing:', error)
+        this.log.error('error initializing:', error)
         throw error
       })
     this.routes = []
@@ -55,7 +55,7 @@ export class HeliaServer {
     this.heliaNode = await getCustomHelia()
     this.heliaFetch = await createVerifiedFetch(this.heliaNode, { contentTypeParser })
 
-    this.log('Helia Started!')
+    this.log('heliaServer Started!')
     this.routes = [
       {
         // without this non-wildcard postfixed path, the '/*' route will match first.
@@ -122,12 +122,12 @@ export class HeliaServer {
     this.log('fetch request %s', request.url)
     const { ns: namespace, '*': relativePath, address } = params as EntryParams
 
-    this.log('Handling entry: ', { address, namespace, relativePath })
+    this.log('handling entry: ', { address, namespace, relativePath })
     if (!USE_SUBDOMAINS) {
-      this.log('Subdomains are disabled, fetching without subdomain')
+      this.log('subdomains are disabled, fetching without subdomain')
       return this.fetch({ request, reply })
     } else {
-      this.log('Subdomains are enabled, redirecting to subdomain')
+      this.log('subdomains are enabled, redirecting to subdomain')
     }
 
     const { peerId, cid } = getIpnsAddressDetails(address)
@@ -146,16 +146,15 @@ export class HeliaServer {
       // TODO: temporary ipfs gateway spec?
       // if (query.uri != null) {
       // // Test = http://localhost:8080/ipns/?uri=ipns%3A%2F%2Fdnslink-subdomain-gw-test.example.org
-      //   this.log('Got URI query parameter: ', query.uri)
+      //   this.log('got URI query parameter: ', query.uri)
       //   const url = new URL(query.uri)
       //   address = url.hostname
       // }
       // finalUrl += encodeURIComponent(`?${new URLSearchParams(request.query).toString()}`)
     }
-    this.log('relativePath: ', relativePath)
 
     const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}/${relativePath ?? ''}`
-    this.log('Redirecting to final URL:', finalUrl)
+    this.log('redirecting to final URL:', finalUrl)
     await reply
       .headers({
         Location: finalUrl
@@ -216,7 +215,7 @@ export class HeliaServer {
         done = _done
       }
     } catch (err) {
-      this.log('Error reading response:', err)
+      this.log.error('error reading response:', err)
     } finally {
       reply.raw.end()
     }
@@ -233,7 +232,7 @@ export class HeliaServer {
     setMaxListeners(Infinity, opController.signal)
     request.raw.on('close', () => {
       if (request.raw.aborted) {
-        this.log('Request aborted by client')
+        this.log('request aborted by client')
         opController.abort()
       }
     })
@@ -250,12 +249,12 @@ export class HeliaServer {
 
     try {
       if (this.heliaVersionInfo === undefined) {
-        this.log('Fetching Helia version info')
+        this.log('fetching Helia version info')
         const { default: packageJson } = await import('../../node_modules/helia/package.json', {
           assert: { type: 'json' }
         })
         const { version: heliaVersionString } = packageJson
-        this.log('Helia version string:', heliaVersionString)
+        this.log('helia version string:', heliaVersionString)
 
         // handling the next versioning strategy
         const [heliaNextVersion, heliaNextCommit] = heliaVersionString.split('-')
@@ -274,7 +273,7 @@ export class HeliaServer {
         }
       }
 
-      this.log('Helia version info:', this.heliaVersionInfo)
+      this.log('helia version info:', this.heliaVersionInfo)
       await reply.code(200).header('Content-Type', 'application/json; charset=utf-8').send(this.heliaVersionInfo)
     } catch (error) {
       await reply.code(500).send(error)
@@ -286,7 +285,7 @@ export class HeliaServer {
    */
   async gc ({ reply }: RouteHandler): Promise<void> {
     await this.isReady
-    this.log('GCing node')
+    this.log('running `gc` on Helia node')
     await this.heliaNode?.gc({ signal: AbortSignal.timeout(20000) })
     await reply.code(200).send('OK')
   }
