@@ -1,12 +1,12 @@
 import compress from '@fastify/compress'
 import cors from '@fastify/cors'
-import debug from 'debug'
 import Fastify from 'fastify'
 import metricsPlugin from 'fastify-metrics'
-import { FASTIFY_DEBUG, HOST, PORT, METRICS, ECHO_HEADERS } from './constants.js'
+import { HOST, PORT, METRICS, ECHO_HEADERS, FASTIFY_DEBUG } from './constants.js'
 import { HeliaServer, type RouteEntry } from './heliaServer.js'
+import { logger } from './logger.js'
 
-const logger = debug('helia-http-gateway')
+const log = logger.forComponent('index')
 
 const heliaServer = new HeliaServer(logger)
 await heliaServer.isReady
@@ -60,19 +60,19 @@ heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
 if ([ECHO_HEADERS].includes(true)) {
   app.addHook('onRequest', async (request, reply) => {
     if (ECHO_HEADERS) {
-      logger('fastify hook onRequest: echoing headers:')
+      log('fastify hook onRequest: echoing headers:')
       Object.keys(request.headers).forEach((headerName) => {
-        logger('\t %s: %s', headerName, request.headers[headerName])
+        log('\t %s: %s', headerName, request.headers[headerName])
       })
     }
   })
 
   app.addHook('onSend', async (request, reply, payload) => {
     if (ECHO_HEADERS) {
-      logger('fastify hook onSend: echoing headers:')
+      log('fastify hook onSend: echoing headers:')
       const responseHeaders = reply.getHeaders()
       Object.keys(responseHeaders).forEach((headerName) => {
-        logger('\t %s: %s', headerName, responseHeaders[headerName])
+        log('\t %s: %s', headerName, responseHeaders[headerName])
       })
     }
     return payload
@@ -85,28 +85,23 @@ const stopWebServer = async (): Promise<void> => {
   try {
     await app.close()
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error(error)
+    log.error(error)
     process.exit(1)
   }
-  // eslint-disable-next-line no-console
-  console.log('Closed out remaining webServer connections.')
+  log('Closed out remaining webServer connections.')
 }
 
 let shutdownRequested = false
 async function closeGracefully (signal: number): Promise<void> {
-  // eslint-disable-next-line no-console
-  console.log(`Received signal to terminate: ${signal}`)
+  log(`Received signal to terminate: ${signal}`)
   if (shutdownRequested) {
-    // eslint-disable-next-line no-console
-    console.log('closeGracefully: shutdown already requested, exiting callback.')
+    log('closeGracefully: shutdown already requested, exiting callback.')
     return
   }
   shutdownRequested = true
 
   await Promise.all([heliaServer.stop().then(() => {
-    // eslint-disable-next-line no-console
-    console.log('Stopped Helia.')
+    log('Stopped Helia.')
   }), stopWebServer()])
 
   process.kill(process.pid, signal)

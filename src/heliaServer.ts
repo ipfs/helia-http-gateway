@@ -1,11 +1,12 @@
 import { setMaxListeners } from 'node:events'
+import { createVerifiedFetch, type VerifiedFetch } from '@helia/verified-fetch'
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { USE_SUBDOMAINS } from './constants.js'
-import { DEFAULT_MIME_TYPE, parseContentType } from './contentType.js'
+import { contentTypeParser } from './content-type-parser.js'
 import { getCustomHelia } from './getCustomHelia.js'
-import { HeliaFetch, type HeliaFetchOptions } from './heliaFetch.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
-import type debug from 'debug'
+import type { ComponentLogger, Logger } from '@libp2p/interface'
+import type { Helia } from 'helia'
 
 const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.com/repos/ipfs/helia/git/ref/tags/helia-v${version}`
 
@@ -27,31 +28,34 @@ interface EntryParams {
 }
 
 export class HeliaServer {
-  private heliaFetch!: HeliaFetch
+  private heliaFetch!: VerifiedFetch
   private heliaVersionInfo!: { Version: string, Commit: string }
-  private readonly HOST_PART_REGEX = /^(?<address>.+)\.(?<namespace>ip[fn]s)\..+$/
-  private readonly log: debug.Debugger
+  private readonly log: Logger
   public isReady: Promise<void>
   public routes: RouteEntry[]
+  private heliaNode!: Helia
 
-  constructor (logger: debug.Debugger) {
-    this.log = logger.extend('server')
+  constructor (logger: ComponentLogger) {
+    this.log = logger.forComponent('server')
     this.isReady = this.init()
+      .then(() => {
+        this.log('initialized')
+      })
+      .catch((error) => {
+        this.log.error('error initializing:', error)
+        throw error
+      })
     this.routes = []
-    this.log('Initialized')
   }
 
   /**
    * Initialize the HeliaServer instance
    */
   async init (): Promise<void> {
-    this.heliaFetch = new HeliaFetch({
-      logger: this.log,
-      node: await getCustomHelia()
-    })
-    await this.heliaFetch.ready
-    // eslint-disable-next-line no-console
-    console.log('Helia Started!')
+    this.heliaNode = await getCustomHelia()
+    this.heliaFetch = await createVerifiedFetch(this.heliaNode, { contentTypeParser })
+
+    this.log('heliaServer Started!')
     this.routes = [
       {
         // without this non-wildcard postfixed path, the '/*' route will match first.
@@ -115,28 +119,25 @@ export class HeliaServer {
    */
   private async handleEntry ({ request, reply }: RouteHandler): Promise<void> {
     const { params } = request
-    const { ns: namespace, '*': relativePath } = params as EntryParams
-    const { address } = params as EntryParams
-    this.log('Handling entry: ', { address, namespace, relativePath })
+    this.log('fetch request %s', request.url)
+    const { ns: namespace, '*': relativePath, address } = params as EntryParams
+
+    this.log('handling entry: ', { address, namespace, relativePath })
     if (!USE_SUBDOMAINS) {
-      this.log('Subdomains are disabled, fetching without subdomain')
-      return this.fetchWithoutSubdomain({ request, reply, address, namespace, relativePath })
+      this.log('subdomains are disabled, fetching without subdomain')
+      return this.fetch({ request, reply })
     } else {
-      this.log('Subdomains are enabled, redirecting to subdomain')
-    }
-    if (address.includes('wikipedia')) {
-      await reply.code(500).send('Wikipedia is not yet supported. Follow https://github.com/ipfs/helia-http-gateway/issues/35 for more information.')
-      return
+      this.log('subdomains are enabled, redirecting to subdomain')
     }
 
     const { peerId, cid } = getIpnsAddressDetails(address)
-    const cidv1Address = cid?.toString()
     if (peerId != null) {
-      return this.fetchWithoutSubdomain({ request, reply, address, namespace, relativePath, peerId, cid })
+      return this.fetch({ request, reply })
     }
+    const cidv1Address = cid?.toString()
 
-    const query = (request.query as Record<string, string>)
-    this.log('query: ', query)
+    const query = request.query as Record<string, string>
+    this.log.trace('query: ', query)
     // eslint-disable-next-line no-warning-comments
     // TODO: enable support for query params
     if (query != null) {
@@ -145,16 +146,15 @@ export class HeliaServer {
       // TODO: temporary ipfs gateway spec?
       // if (query.uri != null) {
       // // Test = http://localhost:8080/ipns/?uri=ipns%3A%2F%2Fdnslink-subdomain-gw-test.example.org
-      //   this.log('Got URI query parameter: ', query.uri)
+      //   this.log('got URI query parameter: ', query.uri)
       //   const url = new URL(query.uri)
       //   address = url.hostname
       // }
       // finalUrl += encodeURIComponent(`?${new URLSearchParams(request.query).toString()}`)
     }
-    this.log('relativePath: ', relativePath)
 
     const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}/${relativePath ?? ''}`
-    this.log('Redirecting to final URL:', finalUrl)
+    this.log('redirecting to final URL:', finalUrl)
     await reply
       .headers({
         Location: finalUrl
@@ -163,58 +163,59 @@ export class HeliaServer {
       .send()
   }
 
-  /**
-   * Parses the host into its parts.
-   */
-  private parseHostParts (host: string): { address: string, namespace: string } {
-    const result = host.match(this.HOST_PART_REGEX)
-    if (result == null || result?.groups == null) {
-      this.log(`Error parsing path: ${host}:`, result)
-      throw new Error(`Subdomain: ${host} is not valid`)
-    }
-    return result.groups as { address: string, namespace: string }
-  }
-
-  async fetchWithoutSubdomain ({ request, reply, peerId, cid, address, namespace, relativePath }: RouteHandler & HeliaFetchOptions): Promise<void> {
-    this.log('Fetching without subdomain')
-    const opController = new AbortController()
-    setMaxListeners(Infinity, opController.signal)
-    request.raw.on('close', () => {
-      if (request.raw.aborted) {
-        this.log('Request aborted by client')
-        opController.abort()
+  #getFullUrlFromFastifyRequest (request: FastifyRequest): string {
+    let query = ''
+    if (request.query != null) {
+      this.log('request.query:', request.query)
+      const pairs: string[] = []
+      Object.keys(request.query).forEach((key: string) => {
+        const value = (request.query as Record<string, string>)[key]
+        pairs.push(`${key}=${value}`)
+      })
+      if (pairs.length > 0) {
+        query += '?' + pairs.join('&')
       }
-    })
-    // const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
-    try {
-      await this.isReady
-      await this._fetch({ request, reply, address, namespace, relativePath, signal: opController.signal, peerId, cid })
-    } catch (error) {
-      this.log('Error requesting content from helia:', error)
-      await reply.code(500).send(error)
     }
+
+    return `${request.protocol}://${request.hostname}${request.url}${query}`
   }
 
-  async _fetch ({ reply, address, namespace, relativePath, signal, cid, peerId }: RouteHandler & HeliaFetchOptions & { signal: AbortSignal }): Promise<void> {
-    this.log('Fetching from Helia:', { address, namespace, relativePath })
-    let type: string | undefined
-    // raw response is needed to respond with the correct content type.
+  #convertVerifiedFetchResponseToFastifyReply = async (verifiedFetchResponse: Response, reply: FastifyReply): Promise<void> => {
+    if (!verifiedFetchResponse.ok) {
+      this.log('verified-fetch response not ok: ', verifiedFetchResponse.status)
+      await reply.code(verifiedFetchResponse.status).send(verifiedFetchResponse.statusText)
+      return
+    }
+    const contentType = verifiedFetchResponse.headers.get('content-type')
+    if (contentType == null) {
+      this.log('verified-fetch response has no content-type')
+      await reply.code(200).send(verifiedFetchResponse.body)
+      return
+    }
+    if (verifiedFetchResponse.body == null) {
+      this.log('verified-fetch response has no body')
+      await reply.code(501).send('empty')
+      return
+    }
+
+    const headers: Record<string, string> = {}
+    for (const [headerName, headerValue] of verifiedFetchResponse.headers.entries()) {
+      headers[headerName] = headerValue
+    }
+    // Fastify really does not like streams despite what the documentation and github issues say.
+    const reader = verifiedFetchResponse.body.getReader()
+    reply.raw.writeHead(verifiedFetchResponse.status, headers)
     try {
-      for await (const chunk of await this.heliaFetch.fetch({ address, namespace, relativePath, signal, cid, peerId })) {
-        if (type === undefined) {
-          type = await parseContentType({ bytes: chunk, path: relativePath })
-          // this needs to happen first.
-          reply.raw.writeHead(200, {
-            'Content-Type': type ?? DEFAULT_MIME_TYPE,
-            'Cache-Control': 'public, max-age=31536000, immutable'
-          })
+      let done = false
+      while (!done) {
+        const { done: _done, value } = await reader.read()
+        if (value != null) {
+          reply.raw.write(Buffer.from(value))
         }
-        reply.raw.write(Buffer.from(chunk))
+        done = _done
       }
     } catch (err) {
-      this.log('Error fetching from Helia:', err)
-      // TODO: If we failed here and we already wrote the headers, we need to handle that.
-      // await reply.code(500)
+      this.log.error('error reading response:', err)
     } finally {
       reply.raw.end()
     }
@@ -224,38 +225,20 @@ export class HeliaServer {
    * Fetches a content for a subdomain, which basically queries delegated routing API and then fetches the path from helia.
    */
   async fetch ({ request, reply }: RouteHandler): Promise<void> {
-    this.log('Fetching from Helia:', request.url)
+    const url = this.#getFullUrlFromFastifyRequest(request)
+    this.log('fetching url "%s" with @helia/verified-fetch', url)
+
     const opController = new AbortController()
     setMaxListeners(Infinity, opController.signal)
     request.raw.on('close', () => {
       if (request.raw.aborted) {
-        this.log('Request aborted by client')
+        this.log('request aborted by client')
         opController.abort()
       }
     })
-    try {
-      await this.isReady
-      this.log('Requesting content from helia:', request.url)
-      let address: string
-      let namespace: string
-      try {
-        const hostParts = this.parseHostParts(request.hostname)
-        address = hostParts.address
-        namespace = hostParts.namespace
-      } catch (e) {
-        // not a valid request, should have been caught prior to calling this method.
-        return await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
-      }
-      if (address.includes('wikipedia')) {
-        await reply.code(500).send('Wikipedia is not yet supported. Follow https://github.com/ipfs/helia-http-gateway/issues/35 for more information.')
-        return
-      }
-      const { url: relativePath } = request
-      await this._fetch({ request, reply, address, namespace, relativePath, signal: opController.signal })
-    } catch (error) {
-      this.log('Error requesting content from helia:', error)
-      await reply.code(500).send(error)
-    }
+    await this.isReady
+    const resp = await this.heliaFetch(url, { signal: opController.signal, redirect: 'manual' })
+    await this.#convertVerifiedFetchResponseToFastifyReply(resp, reply)
   }
 
   /**
@@ -266,12 +249,12 @@ export class HeliaServer {
 
     try {
       if (this.heliaVersionInfo === undefined) {
-        this.log('Fetching Helia version info')
+        this.log('fetching Helia version info')
         const { default: packageJson } = await import('../../node_modules/helia/package.json', {
           assert: { type: 'json' }
         })
         const { version: heliaVersionString } = packageJson
-        this.log('Helia version string:', heliaVersionString)
+        this.log('helia version string:', heliaVersionString)
 
         // handling the next versioning strategy
         const [heliaNextVersion, heliaNextCommit] = heliaVersionString.split('-')
@@ -290,7 +273,7 @@ export class HeliaServer {
         }
       }
 
-      this.log('Helia version info:', this.heliaVersionInfo)
+      this.log('helia version info:', this.heliaVersionInfo)
       await reply.code(200).header('Content-Type', 'application/json; charset=utf-8').send(this.heliaVersionInfo)
     } catch (error) {
       await reply.code(500).send(error)
@@ -302,8 +285,8 @@ export class HeliaServer {
    */
   async gc ({ reply }: RouteHandler): Promise<void> {
     await this.isReady
-    this.log('GCing node')
-    await this.heliaFetch.node?.gc({ signal: AbortSignal.timeout(20000) })
+    this.log('running `gc` on Helia node')
+    await this.heliaNode?.gc({ signal: AbortSignal.timeout(20000) })
     await reply.code(200).send('OK')
   }
 

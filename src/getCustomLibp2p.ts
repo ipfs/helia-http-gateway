@@ -1,34 +1,28 @@
-import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
 import { createDelegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
 import { autoNAT as autoNATService } from '@libp2p/autonat'
 import { bootstrap } from '@libp2p/bootstrap'
-import { circuitRelayTransport, circuitRelayServer, type CircuitRelayService } from '@libp2p/circuit-relay-v2'
+import { circuitRelayTransport } from '@libp2p/circuit-relay-v2'
 import { dcutr as dcutrService } from '@libp2p/dcutr'
 import { identify as identifyService, type Identify } from '@libp2p/identify'
-import { type DualKadDHT, kadDHT } from '@libp2p/kad-dht'
+import { type KadDHT, kadDHT } from '@libp2p/kad-dht'
 import { mplex } from '@libp2p/mplex'
 import { ping as pingService, type PingService } from '@libp2p/ping'
 import { tcp } from '@libp2p/tcp'
-import { uPnPNAT as uPnPNATService } from '@libp2p/upnp-nat'
-// import { webRTC, webRTCDirect } from '@libp2p/webrtc'
 import { webSockets } from '@libp2p/websockets'
 import { ipnsSelector } from 'ipns/selector'
 import { ipnsValidator } from 'ipns/validator'
 import { createLibp2p as create, type Libp2pOptions } from 'libp2p'
-import { DELEGATED_ROUTING_V1_HOST, USE_DELEGATED_ROUTING, USE_LIBP2P } from './constants.js'
-import type { Libp2p, PubSub, ServiceMap } from '@libp2p/interface'
+import { DELEGATED_ROUTING_V1_HOST, USE_DELEGATED_ROUTING } from './constants.js'
+import type { Libp2p, ServiceMap } from '@libp2p/interface'
 import type { HeliaInit } from 'helia'
 
 interface HeliaGatewayLibp2pServices extends Record<string, unknown> {
-  dht: DualKadDHT
+  dht: KadDHT
   delegatedRouting: unknown
-  pubsub: PubSub
-  relay: CircuitRelayService
   identify: Identify
   autoNAT: unknown
-  upnp: unknown
   dcutr: unknown
   ping: PingService
 }
@@ -41,8 +35,6 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
   const libp2pServices: ServiceMap = {
     identify: identifyService(),
     autoNAT: autoNATService(),
-    upnp: uPnPNATService(),
-    pubsub: gossipsub(),
     dcutr: dcutrService(),
     dht: kadDHT({
       // don't do DHT server work.
@@ -53,10 +45,6 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
       selectors: {
         ipns: ipnsSelector
       }
-    }),
-    relay: circuitRelayServer({
-      // don't advertise as a circuitRelay server because we have one job, and that is to:  listen for http requests, maybe fetch content, return http responses.
-      // advertise: true
     }),
     ping: pingService()
   }
@@ -80,7 +68,7 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
     },
     transports: [
       circuitRelayTransport({
-        discoverRelays: USE_LIBP2P ? 1 : 0
+        discoverRelays: 0
       }),
       tcp(),
       /**
@@ -115,12 +103,6 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
     ],
     // @ts-expect-error - types are borked
     services: libp2pServices
-  }
-
-  if (!USE_LIBP2P) {
-    // we should not be running libp2p things
-    options.start = false
-    // options.peerDiscovery = []
   }
 
   return create(options)
