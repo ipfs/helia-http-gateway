@@ -237,7 +237,18 @@ export class HeliaServer {
       }
     })
     await this.isReady
-    const resp = await this.heliaFetch(url, { signal: opController.signal, redirect: 'manual' })
+    // pass headers from the original request (IncomingHttpHeaders) to HeadersInit
+    const headers: Record<string, string> = {}
+    for (const [headerName, headerValue] of Object.entries(request.headers)) {
+      if (headerValue != null) {
+        if (typeof headerValue === 'string') {
+          headers[headerName] = headerValue
+        } else {
+          headers[headerName] = headerValue.join(',')
+        }
+      }
+    }
+    const resp = await this.heliaFetch(url, { signal: opController.signal, redirect: 'manual', headers })
     await this.#convertVerifiedFetchResponseToFastifyReply(resp, reply)
   }
 
