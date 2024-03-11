@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions  */
 import { setMaxListeners } from 'node:events'
-import { createVerifiedFetch } from '@helia/verified-fetch'
+import { createVerifiedFetch, type VerifiedFetch } from '@helia/verified-fetch'
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { USE_SUBDOMAINS } from './constants.js'
 import { contentTypeParser } from './content-type-parser.js'
@@ -43,7 +42,7 @@ interface HeliaFetchOptions extends HeliaPathParts {
 }
 
 export class HeliaServer {
-  private heliaFetch!: Awaited<ReturnType<typeof createVerifiedFetch>>
+  private heliaFetch!: VerifiedFetch
   private heliaVersionInfo!: { Version: string, Commit: string }
   private readonly HOST_PART_REGEX = /^(?<address>.+)\.(?<namespace>ip[fn]s)\..+$/
   private readonly log: Logger

@@ -25,12 +25,12 @@ export async function getCustomHelia (): Promise<Helia> {
 
   let blockstore: HeliaInit['blockstore'] | undefined
   if (FILE_BLOCKSTORE_PATH != null) {
-    blockstore = new LevelBlockstore(FILE_BLOCKSTORE_PATH) as HeliaInit['blockstore']
+    blockstore = new LevelBlockstore(FILE_BLOCKSTORE_PATH)
   }
 
   let datastore: HeliaInit['datastore'] | undefined
   if (FILE_DATASTORE_PATH != null) {
-    datastore = new LevelDatastore(FILE_DATASTORE_PATH) as HeliaInit['datastore']
+    datastore = new LevelDatastore(FILE_DATASTORE_PATH)
   }
 
   if (USE_LIBP2P || USE_BITSWAP) {
@@ -39,7 +39,7 @@ export async function getCustomHelia (): Promise<Helia> {
       blockstore,
       datastore,
       blockBrokers
-    }) as unknown as Promise<Helia>
+    })
   }
 
   const routers: HeliaInit['routers'] = []
@@ -52,5 +52,5 @@ export async function getCustomHelia (): Promise<Helia> {
     datastore,
     blockBrokers,
     routers
-  }) as unknown as Promise<Helia>
+  })
 }
