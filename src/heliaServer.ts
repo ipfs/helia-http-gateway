@@ -3,6 +3,7 @@ import { createVerifiedFetch, type VerifiedFetch } from '@helia/verified-fetch'
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { USE_SUBDOMAINS } from './constants.js'
 import { contentTypeParser } from './content-type-parser.js'
+import { dnsLinkLabelEncoder, isInlinedDnsLink } from './dns-link-labels.js'
 import { getCustomHelia } from './getCustomHelia.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
 import type { ComponentLogger, Logger } from '@libp2p/interface'
@@ -152,8 +153,12 @@ export class HeliaServer {
       // }
       // finalUrl += encodeURIComponent(`?${new URLSearchParams(request.query).toString()}`)
     }
+    let encodedDnsLink = address
+    if (!isInlinedDnsLink(address)) {
+      encodedDnsLink = dnsLinkLabelEncoder(address)
+    }
 
-    const finalUrl = `//${cidv1Address ?? address}.${namespace}.${request.hostname}/${relativePath ?? ''}`
+    const finalUrl = `//${cidv1Address ?? encodedDnsLink}.${namespace}.${request.hostname}/${relativePath ?? ''}`
     this.log('redirecting to final URL:', finalUrl)
     await reply
       .headers({
