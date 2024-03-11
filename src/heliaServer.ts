@@ -3,12 +3,10 @@ import { createVerifiedFetch, type VerifiedFetch } from '@helia/verified-fetch'
 import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } from 'fastify'
 import { USE_SUBDOMAINS } from './constants.js'
 import { contentTypeParser } from './content-type-parser.js'
-import { dnsLinkLabelDecoder, isDnsLabel } from './dns-link-labels.js'
 import { getCustomHelia } from './getCustomHelia.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
-import type { ComponentLogger, Logger, PeerId } from '@libp2p/interface'
+import type { ComponentLogger, Logger } from '@libp2p/interface'
 import type { Helia } from 'helia'
-import type { CID } from 'multiformats/cid'
 
 const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.com/repos/ipfs/helia/git/ref/tags/helia-v${version}`
 
@@ -29,22 +27,9 @@ interface EntryParams {
   '*': string
 }
 
-interface HeliaPathParts {
-  address: string
-  namespace: string
-  relativePath: string
-}
-
-interface HeliaFetchOptions extends HeliaPathParts {
-  signal?: AbortSignal
-  cid?: CID | null
-  peerId?: PeerId | null
-}
-
 export class HeliaServer {
   private heliaFetch!: VerifiedFetch
   private heliaVersionInfo!: { Version: string, Commit: string }
-  private readonly HOST_PART_REGEX = /^(?<address>.+)\.(?<namespace>ip[fn]s)\..+$/
   private readonly log: Logger
   public isReady: Promise<void>
   public routes: RouteEntry[]
@@ -134,27 +119,25 @@ export class HeliaServer {
    */
   private async handleEntry ({ request, reply }: RouteHandler): Promise<void> {
     const { params } = request
+    this.log('fetch request %s', request.url)
     const { ns: namespace, '*': relativePath, address } = params as EntryParams
+
     this.log('Handling entry: ', { address, namespace, relativePath })
     if (!USE_SUBDOMAINS) {
       this.log('Subdomains are disabled, fetching without subdomain')
-      return this.fetchWithoutSubdomain({ request, reply, address, namespace, relativePath })
+      return this.fetch({ request, reply })
     } else {
       this.log('Subdomains are enabled, redirecting to subdomain')
-    }
-    if (address.includes('wikipedia')) {
-      await reply.code(500).send('Wikipedia is not yet supported. Follow https://github.com/ipfs/helia-http-gateway/issues/35 for more information.')
-      return
     }
 
     const { peerId, cid } = getIpnsAddressDetails(address)
     if (peerId != null) {
-      return this.fetchWithoutSubdomain({ request, reply, address, namespace, relativePath, peerId, cid })
+      return this.fetch({ request, reply })
     }
     const cidv1Address = cid?.toString()
 
-    const query = (request.query as Record<string, string>)
-    this.log('query: ', query)
+    const query = request.query as Record<string, string>
+    this.log.trace('query: ', query)
     // eslint-disable-next-line no-warning-comments
     // TODO: enable support for query params
     if (query != null) {
@@ -181,80 +164,38 @@ export class HeliaServer {
       .send()
   }
 
-  /**
-   * Parses the host into its parts.
-   */
-  private parseHostParts (host: string): { address: string, namespace: string } {
-    const result = host.match(this.HOST_PART_REGEX)
-    if (result == null || result?.groups == null) {
-      this.log(`Error parsing path: ${host}:`, result)
-      throw new Error(`Subdomain: ${host} is not valid`)
-    }
-    return result.groups as { address: string, namespace: string }
-  }
-
-  async fetchWithoutSubdomain ({ request, reply, peerId, cid, address, namespace, relativePath }: RouteHandler & HeliaFetchOptions): Promise<void> {
-    this.log('Fetching without subdomain')
-    const opController = new AbortController()
-    setMaxListeners(Infinity, opController.signal)
-    request.raw.on('close', () => {
-      if (request.raw.aborted) {
-        this.log('Request aborted by client')
-        opController.abort()
-      }
-    })
-    // const { ns: namespace, address, '*': relativePath } = request.params as EntryParams
-    try {
-      await this.isReady
-      await this._fetch({ request, reply, address, namespace, relativePath, signal: opController.signal, peerId, cid })
-    } catch (error) {
-      this.log('Error requesting content from helia:', error)
-      await reply.code(500).send(error)
-    }
-  }
-
-  /**
-   * Convert HeliaFetchOptions to a URL string compatible with `@helia/verified-fetch`
-   */
-  #getUrlFromArgs ({ address, namespace, relativePath, peerId, cid }: HeliaFetchOptions): string {
-    // The if a DNSLink returned here needs to be encoded per https://specs.ipfs.tech/http-gateways/subdomain-gateway/#host-request-header
-    if (namespace === 'ipns') {
-      if (isDnsLabel(address)) {
-        address = dnsLinkLabelDecoder(address)
+  #getFullUrlFromFastifyRequest (request: FastifyRequest): string {
+    let query = ''
+    if (request.query != null) {
+      this.log('request.query:', request.query)
+      const pairs: string[] = []
+      Object.keys(request.query).forEach((key: string) => {
+        const value = (request.query as Record<string, string>)[key]
+        pairs.push(`${key}=${value}`)
+      })
+      if (pairs.length > 0) {
+        query += '?' + pairs.join('&')
       }
     }
-    return `${namespace}://${address}/${relativePath}`
+
+    return `${request.protocol}://${request.hostname}${request.url}${query}`
   }
 
-  /**
-   * Fetches a content for a subdomain, which basically queries delegated routing API and then fetches the path from helia.
-   */
-  async _fetch ({ reply, address, namespace, relativePath, signal, cid, peerId }: RouteHandler & HeliaFetchOptions & { signal: AbortSignal }): Promise<void> {
-    this.log('Fetching from Helia:', { address, namespace, relativePath })
-    // let type: string | undefined
-    const url = this.#getUrlFromArgs({ address, namespace, relativePath, peerId, cid })
-    this.log('got URL for verified-fetch: ', url)
-
-    const verifiedFetchResponse = await this.heliaFetch(url, { signal })
-    this.log('Got verified-fetch response: ', verifiedFetchResponse.status)
-
+  #convertVerifiedFetchResponseToFastifyReply = async (verifiedFetchResponse: Response, reply: FastifyReply): Promise<void> => {
     if (!verifiedFetchResponse.ok) {
       this.log('verified-fetch response not ok: ', verifiedFetchResponse.status)
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      reply.code(verifiedFetchResponse.status).send(verifiedFetchResponse.statusText)
+      await reply.code(verifiedFetchResponse.status).send(verifiedFetchResponse.statusText)
       return
     }
     const contentType = verifiedFetchResponse.headers.get('content-type')
     if (contentType == null) {
       this.log('verified-fetch response has no content-type')
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      reply.code(200).send(verifiedFetchResponse.body)
+      await reply.code(200).send(verifiedFetchResponse.body)
       return
     }
     if (verifiedFetchResponse.body == null) {
       this.log('verified-fetch response has no body')
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      reply.code(501).send('empty')
+      await reply.code(501).send('empty')
       return
     }
 
@@ -285,7 +226,9 @@ export class HeliaServer {
    * Fetches a content for a subdomain, which basically queries delegated routing API and then fetches the path from helia.
    */
   async fetch ({ request, reply }: RouteHandler): Promise<void> {
-    this.log('Fetching from Helia:', request.url)
+    const url = this.#getFullUrlFromFastifyRequest(request)
+    this.log('fetching url "%s" with @helia/verified-fetch', url)
+
     const opController = new AbortController()
     setMaxListeners(Infinity, opController.signal)
     request.raw.on('close', () => {
@@ -294,29 +237,9 @@ export class HeliaServer {
         opController.abort()
       }
     })
-    try {
-      await this.isReady
-      this.log('Requesting content from helia:', request.url)
-      let address: string
-      let namespace: string
-      try {
-        const hostParts = this.parseHostParts(request.hostname)
-        address = hostParts.address
-        namespace = hostParts.namespace
-      } catch (e) {
-        // not a valid request, should have been caught prior to calling this method.
-        return reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
-      }
-      if (address.includes('wikipedia')) {
-        await reply.code(500).send('Wikipedia is not yet supported. Follow https://github.com/ipfs/helia-http-gateway/issues/35 for more information.')
-        return
-      }
-      const { url: relativePath } = request
-      await this._fetch({ request, reply, address, namespace, relativePath, signal: opController.signal })
-    } catch (error) {
-      this.log('Error requesting content from helia:', error)
-      await reply.code(500).send(error)
-    }
+    await this.isReady
+    const resp = await this.heliaFetch(url, { signal: opController.signal, redirect: 'manual' })
+    await this.#convertVerifiedFetchResponseToFastifyReply(resp, reply)
   }
 
   /**
