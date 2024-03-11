@@ -60,9 +60,8 @@
   "homepage": "https://github.com/ipfs/helia-http-gateway#readme",
   "devDependencies": {
     "@playwright/test": "^1.40.1",
-    "@types/mime-types": "2.x",
-    "@types/node": "20.x",
-    "aegir": "42.x",
+    "@types/node": "^20.11.25",
+    "aegir": "^42.2.5",
     "clinic": "^13.0.0",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
