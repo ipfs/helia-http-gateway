@@ -74,7 +74,6 @@
     "wait-on": "^7.1.0"
   },
   "dependencies": {
-    "@chainsafe/libp2p-gossipsub": "^13.0.0",
     "@chainsafe/libp2p-noise": "^15.0.0",
     "@chainsafe/libp2p-yamux": "^6.0.2",
     "@fastify/compress": "^6.5.0",
@@ -98,7 +97,6 @@
     "@libp2p/peer-id": "^4.0.7",
     "@libp2p/ping": "^1.0.12",
     "@libp2p/tcp": "^9.0.16",
-    "@libp2p/upnp-nat": "^1.0.14",
     "@libp2p/websockets": "^8.0.16",
     "@sgtpooki/file-type": "^1.0.1",
     "blockstore-level": "^1.1.8",
