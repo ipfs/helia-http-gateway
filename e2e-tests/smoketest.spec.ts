@@ -8,7 +8,7 @@ const pages = [
   'consensuslab.world',
   'docs.ipfs.tech',
   'docs.libp2p.io',
-  'drand.love',
+  // 'drand.love', // no dnsaddr or dnslink TXT record, only "x-ipfs-path" header (supported only by ipfs-companion and brave)
   // 'fil.org', // timing out
   // 'filecoin.io', // timing out
   // 'green.filecoin.io', // timing out
