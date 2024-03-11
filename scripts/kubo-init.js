@@ -15,6 +15,7 @@ debug.enable('kubo-init*')
 
 const kuboFilePath = './scripts/tmp/kubo-path.txt'
 const GWC_FIXTURES_PATH = `${dirname(kuboFilePath)}/fixtures`
+const GWC_DOCKER_IMAGE = process.env.GWC_DOCKER_IMAGE || 'ghcr.io/ipfs/gateway-conformance:v0.5.0'
 
 async function main () {
   await $`mkdir -p ${dirname(kuboFilePath)}`
@@ -97,7 +98,7 @@ async function configureKubo (tmpDir) {
 async function downloadFixtures () {
   log('Downloading fixtures')
   try {
-    await $`docker run -v ${process.cwd()}:/workspace -w /workspace ghcr.io/ipfs/gateway-conformance:v0.4.2 extract-fixtures --directory ${GWC_FIXTURES_PATH} --merged false`
+    await $`docker run -v ${process.cwd()}:/workspace -w /workspace ${GWC_DOCKER_IMAGE} extract-fixtures --directory ${GWC_FIXTURES_PATH} --merged false`
   } catch (e) {
     error('Error downloading fixtures, assuming current or previous success', e)
   }
