@@ -7,8 +7,7 @@ import { contentTypeParser } from './content-type-parser.js'
 import { dnsLinkLabelDecoder, isDnsLabel } from './dns-link-labels.js'
 import { getCustomHelia } from './getCustomHelia.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
-import type { PeerId } from '@libp2p/interface'
-import type debug from 'debug'
+import type { ComponentLogger, Logger, PeerId } from '@libp2p/interface'
 import type { Helia } from 'helia'
 import type { CID } from 'multiformats/cid'
 
@@ -47,13 +46,13 @@ export class HeliaServer {
   private heliaFetch!: Awaited<ReturnType<typeof createVerifiedFetch>>
   private heliaVersionInfo!: { Version: string, Commit: string }
   private readonly HOST_PART_REGEX = /^(?<address>.+)\.(?<namespace>ip[fn]s)\..+$/
-  private readonly log: debug.Debugger
+  private readonly log: Logger
   public isReady: Promise<void>
   public routes: RouteEntry[]
   private heliaNode!: Helia
 
-  constructor (logger: debug.Debugger) {
-    this.log = logger.extend('server')
+  constructor (logger: ComponentLogger) {
+    this.log = logger.forComponent('server')
     this.isReady = this.init()
       .then(() => {
         this.log('Initialized')
@@ -72,8 +71,7 @@ export class HeliaServer {
     this.heliaNode = await getCustomHelia()
     this.heliaFetch = await createVerifiedFetch(this.heliaNode, { contentTypeParser })
 
-    // eslint-disable-next-line no-console
-    console.log('Helia Started!')
+    this.log('Helia Started!')
     this.routes = [
       {
         // without this non-wildcard postfixed path, the '/*' route will match first.

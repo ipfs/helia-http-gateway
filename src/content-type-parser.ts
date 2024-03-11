@@ -10,8 +10,6 @@ function checkForSvg (bytes: Uint8Array): string {
 }
 
 export async function contentTypeParser (bytes: Uint8Array, fileName?: string): Promise<string> {
-  // eslint-disable-next-line no-console
-
   const detectedType = (await fileTypeFromBuffer(bytes))?.mime
   if (detectedType != null) {
     return detectedType
