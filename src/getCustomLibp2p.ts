@@ -80,7 +80,7 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
     },
     transports: [
       circuitRelayTransport({
-        discoverRelays: 1
+        discoverRelays: 0
       }),
       tcp(),
       /**
