@@ -23,7 +23,7 @@
     "test:gwc-kubo": "node ./scripts/kubo-init.js",
     "test:gwc-helia": "npm run build && node -r dotenv/config --trace-warnings dist/src/index.js dotenv_config_path=./.env-gwc",
     "test:gwc-setup": "concurrently -k -s all -n \"kubo,helia\" -c \"magenta,blue\" \"npm run test:gwc-kubo\" \"wait-on 'tcp:8080' && npm run test:gwc-helia\"",
-    "test:gwc-execute": "docker run --network host -v $PWD:/workspace -w /workspace $GWC_DOCKER_IMAGE test --gateway-url='http://localhost:8090' --subdomain-url='http://localhost:8090' --verbose --json gwc-report.json --specs subdomain-ipns-gateway,subdomain-ipfs-gateway -- -timeout 30m",
+    "test:gwc-execute": "docker run --network host -v $PWD:/workspace -w /workspace $GWC_DOCKER_IMAGE test --gateway-url='http://localhost:8090' --subdomain-url='http://localhost:8090' --verbose --json gwc-report.json --specs ${GWC_SPECS} -- -timeout 30m",
     "test:gwc": "concurrently -k -s all -n \"kubo&helia,gateway-conformance\" -c \"magenta,blue\" \"npm run test:gwc-setup\" \"wait-on 'tcp:8090' && npm run test:gwc-execute\"",
     "healthcheck": "node dist/src/healthcheck.js",
     "debug:until-death": "./debugging/until-death.sh",
