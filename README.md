@@ -133,6 +133,19 @@ $ npm run test:e2e-doctor # Run the dev server with clinicjs doctor, execute e2e
 $ npm run test:e2e-flame # Run the dev server with clinicjs flame, execute e2e tests, and generate a report.
 ```
 
+## Metrics
+
+Running with `METRICS=true` will enable collecting Fastify/libp2p metrics and
+will expose a prometheus collection endpoint at http://localhost:8080/metrics
+
+### prom-client version
+
+To collect both Fastify and libp2p metrics, the same version of [prom-client](https://www.npmjs.com/package/prom-client)
+must be used by both systems. At the time of writing `fastify-metrics` uses
+`prom-client` 14.x and `@libp2p/prometheus-metrics` uses 15.x so it's necessary
+to add a `overrides` section to `package.json` here to ensure they use the same
+version.
+
 ## Author
 
 - [whizzzkid](https://github.com/whizzzkid)
