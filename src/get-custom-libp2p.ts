@@ -26,7 +26,7 @@ interface HeliaGatewayLibp2pServices extends ServiceMap {
   identify: Identify
 }
 
-interface HeliaGatewayLibp2pOptions extends Pick<HeliaInit, 'datastore'> {
+interface HeliaGatewayLibp2pOptions extends Partial<Pick<HeliaInit, 'datastore'>> {
 
 }
 

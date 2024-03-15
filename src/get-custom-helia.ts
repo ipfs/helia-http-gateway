@@ -6,7 +6,7 @@ import { LevelBlockstore } from 'blockstore-level'
 import { LevelDatastore } from 'datastore-level'
 import { createHelia } from 'helia'
 import { DELEGATED_ROUTING_V1_HOST, FILE_BLOCKSTORE_PATH, FILE_DATASTORE_PATH, TRUSTLESS_GATEWAYS, USE_BITSWAP, USE_DELEGATED_ROUTING, USE_LIBP2P, USE_TRUSTLESS_GATEWAYS } from './constants.js'
-import { getCustomLibp2p } from './getCustomLibp2p.js'
+import { getCustomLibp2p } from './get-custom-libp2p.js'
 import type { Helia } from '@helia/interface'
 
 export async function getCustomHelia (): Promise<Helia> {

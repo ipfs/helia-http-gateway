@@ -4,7 +4,7 @@ import { type FastifyReply, type FastifyRequest, type RouteGenericInterface } fr
 import { USE_SUBDOMAINS } from './constants.js'
 import { contentTypeParser } from './content-type-parser.js'
 import { dnsLinkLabelEncoder, isInlinedDnsLink } from './dns-link-labels.js'
-import { getCustomHelia } from './getCustomHelia.js'
+import { getCustomHelia } from './get-custom-helia.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
 import type { ComponentLogger, Logger } from '@libp2p/interface'
 import type { Helia } from 'helia'
