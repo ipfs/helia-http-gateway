@@ -1,10 +1,15 @@
 # helia-http-gateway
 
-Docker images for Helia.
+[![ipfs.tech](https://img.shields.io/badge/project-IPFS-blue.svg?style=flat-square)](https://ipfs.tech)
+[![Discuss](https://img.shields.io/discourse/https/discuss.ipfs.tech/posts.svg?style=flat-square)](https://discuss.ipfs.tech)
+[![codecov](https://img.shields.io/codecov/c/github/ipfs/helia-http-gateway.svg?style=flat-square)](https://codecov.io/gh/ipfs/helia-http-gateway)
+[![CI](https://img.shields.io/github/actions/workflow/status/ipfs/helia-http-gateway/gateway-conformance.yml?branch=main\&style=flat-square)](https://github.com/ipfs/helia-http-gateway/actions/workflows/gateway-conformance.yml?query=branch%3Amain)
 
-## Purpose
+> HTTP IPFS Gateway implemented using Helia
 
-This container image hosts helia in a node container. It implements [HTTP IPFS-gateway API](https://docs.ipfs.tech/concepts/ipfs-gateway/#gateway-types) and responds to the incoming requests using helia to fetch the content from IPFS.
+# About
+
+A Dockerized application that implements the [HTTP IPFS-gateway API](https://docs.ipfs.tech/concepts/ipfs-gateway/#gateway-types) spec and responds to the incoming requests using [Helia](https://github.com/ipfs/helia) to fetch the content from IPFS.
 
 ## Run from the github container registry
 
@@ -12,7 +17,7 @@ This container image hosts helia in a node container. It implements [HTTP IPFS-g
 $ docker run -it -p 8080:8080 ghcr.io/ipfs/helia-http-gateway:latest
 ```
 
-See https://github.com/ipfs/helia-http-gateway/pkgs/container/helia-http-gateway for more information.
+See <https://github.com/ipfs/helia-http-gateway/pkgs/container/helia-http-gateway> for more information.
 
 ## Run Using Docker Compose
 
@@ -23,6 +28,7 @@ $ docker-compose up
 ## Run Using Docker
 
 ### Build
+
 ```sh
 $ docker build . --tag helia-http-gateway:local
 ```
@@ -39,23 +45,37 @@ $ docker build . --platform linux/arm64 --tag helia-http-gateway:local-arm64
 $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:local # or helia-http-gateway:local-arm64
 ```
 
+## Run without Docker
+
+### Build
+
+```sh
+$ npm run build
+```
+
+### Running
+
+```sh
+$ npm start
+```
+
 ## Supported Environment Variables
 
-| Variable | Description | Default |
-| --- | --- | --- |
-| `DEBUG` | Debug level | `''`|
-| `FASTIFY_DEBUG` | Debug level for fastify's logger | `''`|
-| `PORT` | Port to listen on | `8080` |
-| `HOST` | Host to listen on | `0.0.0.0` |
-| `USE_SUBDOMAINS` | Whether to use [origin isolation](https://docs.ipfs.tech/how-to/gateway-best-practices/#use-subdomain-gateway-resolution-for-origin-isolation) | `true` |
-| `METRICS` | Whether to enable prometheus metrics. Any value other than 'true' will disable metrics. | `true` |
-| `USE_BITSWAP` | Use bitswap to fetch content from IPFS | `true` |
-| `USE_TRUSTLESS_GATEWAYS` | Whether to fetch content from trustless-gateways or not | `true` |
-| `TRUSTLESS_GATEWAYS` | Comma separated list of trusted gateways to fetch content from | [Defined in Helia](https://github.com/ipfs/helia/blob/main/packages/helia/src/block-brokers/trustless-gateway/index.ts) |
-| `USE_LIBP2P` | Whether to use libp2p networking | `true` |
-| `ECHO_HEADERS` | A debug flag to indicate whether you want to output request and response headers | `false` |
-| `USE_DELEGATED_ROUTING` | Whether to use the delegated routing v1 API  | `true` |
-| `DELEGATED_ROUTING_V1_HOST` | Hostname to use for delegated routing v1 | `https://delegated-ipfs.dev` |
+| Variable                    | Description                                                                                                                                    | Default                                                                                                                 |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `DEBUG`                     | Debug level                                                                                                                                    | `''`                                                                                                                    |
+| `FASTIFY_DEBUG`             | Debug level for fastify's logger                                                                                                               | `''`                                                                                                                    |
+| `PORT`                      | Port to listen on                                                                                                                              | `8080`                                                                                                                  |
+| `HOST`                      | Host to listen on                                                                                                                              | `0.0.0.0`                                                                                                               |
+| `USE_SUBDOMAINS`            | Whether to use [origin isolation](https://docs.ipfs.tech/how-to/gateway-best-practices/#use-subdomain-gateway-resolution-for-origin-isolation) | `true`                                                                                                                  |
+| `METRICS`                   | Whether to enable prometheus metrics. Any value other than 'true' will disable metrics.                                                        | `true`                                                                                                                  |
+| `USE_BITSWAP`               | Use bitswap to fetch content from IPFS                                                                                                         | `true`                                                                                                                  |
+| `USE_TRUSTLESS_GATEWAYS`    | Whether to fetch content from trustless-gateways or not                                                                                        | `true`                                                                                                                  |
+| `TRUSTLESS_GATEWAYS`        | Comma separated list of trusted gateways to fetch content from                                                                                 | [Defined in Helia](https://github.com/ipfs/helia/blob/main/packages/helia/src/block-brokers/trustless-gateway/index.ts) |
+| `USE_LIBP2P`                | Whether to use libp2p networking                                                                                                               | `true`                                                                                                                  |
+| `ECHO_HEADERS`              | A debug flag to indicate whether you want to output request and response headers                                                               | `false`                                                                                                                 |
+| `USE_DELEGATED_ROUTING`     | Whether to use the delegated routing v1 API                                                                                                    | `true`                                                                                                                  |
+| `DELEGATED_ROUTING_V1_HOST` | Hostname to use for delegated routing v1                                                                                                       | `https://delegated-ipfs.dev`                                                                                            |
 
 <!--
 TODO: currently broken when used in docker, but they work when running locally (you can cache datastore and blockstore locally to speed things up if you want)
@@ -77,21 +97,25 @@ You can also see some recommended environment variable configurations at:
 Note that any of the following calls to docker can be replaced with something like `MY_ENV_VAR="MY_VALUE" npm run start`
 
 #### Disable libp2p
+
 ```sh
 $ docker run -it -p $PORT:8080 -e DEBUG="helia-http-gateway*" -e USE_LIBP2P="false" helia
 ```
 
 #### Disable bitswap
+
 ```sh
 $ docker run -it -p $PORT:8080 -e DEBUG="helia-http-gateway*" -e USE_BITSWAP="false" helia
 ```
 
 #### Disable trustless gateways
+
 ```sh
 $ docker run -it -p $PORT:8080 -e DEBUG="helia-http-gateway*" -e USE_TRUSTLESS_GATEWAYS="false" helia
 ```
 
 #### Customize trustless gateways
+
 ```sh
 $ docker run -it -p $PORT:8080 -e DEBUG="helia-http-gateway*" -e TRUSTLESS_GATEWAYS="https://ipfs.io,https://dweb.link" helia
 ```
@@ -136,7 +160,7 @@ $ npm run test:e2e-flame # Run the dev server with clinicjs flame, execute e2e t
 ## Metrics
 
 Running with `METRICS=true` will enable collecting Fastify/libp2p metrics and
-will expose a prometheus collection endpoint at http://localhost:8080/metrics
+will expose a prometheus collection endpoint at <http://localhost:8080/metrics>
 
 ### prom-client version
 
@@ -146,6 +170,29 @@ must be used by both systems. At the time of writing `fastify-metrics` uses
 to add a `overrides` section to `package.json` here to ensure they use the same
 version.
 
-## Author
+> Helia in Docker Container
 
-- [whizzzkid](https://github.com/whizzzkid)
+# Install
+
+```console
+$ npm i helia-http-gateway
+```
+
+# License
+
+Licensed under either of
+
+- Apache 2.0, ([LICENSE-APACHE](LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT ([LICENSE-MIT](LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
+
+# Contribute
+
+Contributions welcome! Please check out [the issues](https://github.com/ipfs/helia-http-gateway/issues).
+
+Also see our [contributing document](https://github.com/ipfs/community/blob/master/CONTRIBUTING_JS.md) for more information on how we work, and about contributing in general.
+
+Please be aware that all interactions related to this repo are subject to the IPFS [Code of Conduct](https://github.com/ipfs/community/blob/master/code-of-conduct.md).
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+
+[![](https://cdn.rawgit.com/jbenet/contribute-ipfs-gif/master/img/contribute.gif)](https://github.com/ipfs/community/blob/master/CONTRIBUTING.md)
