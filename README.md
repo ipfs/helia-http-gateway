@@ -9,6 +9,21 @@
 
 # About
 
+<!--
+
+!IMPORTANT!
+
+Everything in this README between "# About" and "# Install" is automatically
+generated and will be overwritten the next time the doc generator is run.
+
+To make changes to this section, please update the @packageDocumentation section
+of src/index.js or src/index.ts
+
+To experiment with formatting, please run "npm run docs" from the root of this
+repo and examine the changes made.
+
+-->
+
 A Dockerized application that implements the [HTTP IPFS-gateway API](https://docs.ipfs.tech/concepts/ipfs-gateway/#gateway-types) spec and responds to the incoming requests using [Helia](https://github.com/ipfs/helia) to fetch the content from IPFS.
 
 ## Run from the github container registry
@@ -47,7 +62,7 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:
 
 ## Run without Docker
 
-### Build
+\### Build
 
 ```sh
 $ npm run build
@@ -161,16 +176,6 @@ $ npm run test:e2e-flame # Run the dev server with clinicjs flame, execute e2e t
 
 Running with `METRICS=true` will enable collecting Fastify/libp2p metrics and
 will expose a prometheus collection endpoint at <http://localhost:8080/metrics>
-
-### prom-client version
-
-To collect both Fastify and libp2p metrics, the same version of [prom-client](https://www.npmjs.com/package/prom-client)
-must be used by both systems. At the time of writing `fastify-metrics` uses
-`prom-client` 14.x and `@libp2p/prometheus-metrics` uses 15.x so it's necessary
-to add a `overrides` section to `package.json` here to ensure they use the same
-version.
-
-> Helia in Docker Container
 
 # Install
 
