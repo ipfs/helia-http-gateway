@@ -13,12 +13,13 @@ RUN wget -P /tmp https://www.openssl.org/source/old/1.1.1/openssl-${OPEN_SSL_VER
 
 # Extract OpenSSL and configure
 RUN mkdir -p /opt/openssl && \
-    tar -xzf /tmp/openssl-${OPEN_SSL_VERSION}.tar.gz -C /opt/openssl && \
-    cd /opt/openssl/openssl-${OPEN_SSL_VERSION} && \
-    ./config --prefix=/opt/openssl --openssldir=/opt/openssl/ssl
+    tar -xzf /tmp/openssl-${OPEN_SSL_VERSION}.tar.gz -C /opt/openssl
 
 # Build and install OpenSSL
 WORKDIR /opt/openssl/openssl-${OPEN_SSL_VERSION}
+
+# Configure OpenSSL
+RUN ./config --prefix=/opt/openssl --openssldir=/opt/openssl/ssl
 
 # Build OpenSSL
 RUN make
@@ -38,7 +39,7 @@ FROM --platform=$BUILDPLATFORM node:20-slim as builder
 
 # Install dependencies required for building the app
 RUN apt-get update && \
-    apt-get install -y tini fd-find && \
+    apt-get install -y tini && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -71,7 +72,7 @@ ENV LD_LIBRARY_PATH /opt/openssl/lib
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=12s --timeout=12s --start-period=10s CMD npm run healthcheck
+HEALTHCHECK --interval=12s --timeout=12s --start-period=10s CMD node dist/src/healthcheck.js
 
 # Use tini to handle signals properly, see https://github.com/nodejs/docker-node/blob/main/docs/BestPractices.md#handling-kernel-signals
 ENTRYPOINT ["/usr/bin/tini", "-p", "SIGKILL", "--"]
