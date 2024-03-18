@@ -1,7 +1,7 @@
 FROM --platform=$BUILDPLATFORM node:20-slim as builder
 
 RUN apt-get update
-RUN apt-get install -y build-essential cmake git libssl-dev tini
+RUN apt-get install -y build-essential cmake git libssl-dev tini openssl fd-find wget
 
 WORKDIR /app
 
@@ -10,6 +10,8 @@ COPY package*.json ./
 RUN npm ci --quiet
 
 COPY . .
+
+RUN scripts/install-openssl.sh
 
 RUN npm run build
 
@@ -26,6 +28,10 @@ COPY --from=builder /usr/bin/tini /usr/bin/tini
 # copy shared libraries (without having artifacts from apt-get install that is needed to build our application)
 COPY --from=builder /usr/lib/**/libcrypto* /usr/lib/
 COPY --from=builder /usr/lib/**/libssl* /usr/lib/
+
+# see scripts/install-openssl.sh
+COPY --from=builder /opt/openssl/lib /opt/openssl/lib
+ENV LD_LIBRARY_PATH /opt/openssl/lib
 
 EXPOSE 8080
 
