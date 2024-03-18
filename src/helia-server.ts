@@ -88,6 +88,21 @@ export class HeliaServer {
         handler: async (request, reply): Promise<void> => this.gc({ request, reply })
       },
       {
+        path: '/api/v0/http-gateway-healthcheck',
+        type: 'GET',
+        handler: async (request, reply): Promise<void> => {
+          const signal = AbortSignal.timeout(1000)
+          try {
+            // echo "hello world" | npx kubo add --cid-version 1 -Q --inline
+            // inline CID is bafkqaddimvwgy3zao5xxe3debi
+            await this.heliaFetch('ipfs://bafkqaddimvwgy3zao5xxe3debi', { signal, redirect: 'follow' })
+            await reply.code(200).send('OK')
+          } catch (error) {
+            await reply.code(500).send(error)
+          }
+        }
+      },
+      {
         path: '/*',
         type: 'GET',
         handler: async (request, reply): Promise<void> => {
