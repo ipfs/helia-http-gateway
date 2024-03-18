@@ -88,7 +88,7 @@ export class HeliaServer {
         handler: async (request, reply): Promise<void> => this.gc({ request, reply })
       },
       {
-        path: '/healthcheck',
+        path: '/api/v0/http-gateway-healthcheck',
         type: 'GET',
         handler: async (request, reply): Promise<void> => {
           const signal = AbortSignal.timeout(1000)
