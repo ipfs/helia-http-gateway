@@ -124,5 +124,8 @@
     "patch-package": "^8.0.0",
     "typescript": "5.x",
     "wait-on": "^7.1.0"
+  },
+  "overrides": {
+    "node-datachannel": "github:murat-dogan/node-datachannel#arm64-static-openssl"
   }
 }
