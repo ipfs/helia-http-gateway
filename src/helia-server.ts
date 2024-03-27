@@ -173,7 +173,7 @@ export class HeliaServer {
       encodedDnsLink = dnsLinkLabelEncoder(address)
     }
 
-    const finalUrl = `//${cidv1Address ?? encodedDnsLink}.${namespace}.${request.hostname}/${relativePath ?? ''}`
+    const finalUrl = `${request.protocol}://${cidv1Address ?? encodedDnsLink}.${namespace}.${request.hostname}/${relativePath ?? ''}`
     this.log('redirecting to final URL:', finalUrl)
     await reply
       .headers({
@@ -213,6 +213,7 @@ export class HeliaServer {
       return
     }
     if (verifiedFetchResponse.body == null) {
+      // this should never happen
       this.log('verified-fetch response has no body')
       await reply.code(501).send('empty')
       return
