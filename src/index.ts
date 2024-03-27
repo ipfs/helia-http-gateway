@@ -39,7 +39,7 @@
  *
  * ## Run without Docker
  *
- * ### Build
+ * ### Build
  *
  * ```sh
  * $ npm run build
