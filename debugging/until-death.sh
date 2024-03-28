@@ -30,7 +30,7 @@ start_gateway() {
 start_gateway & process_pid=$!
 
 ensure_gateway_running() {
-  npx wait-on "tcp:$PORT" -t 1000 || exit 1
+  npx wait-on "tcp:$PORT" -t 5000 || exit 1
 }
 
 

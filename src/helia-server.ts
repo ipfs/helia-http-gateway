@@ -251,12 +251,27 @@ export class HeliaServer {
 
     const opController = new AbortController()
     setMaxListeners(Infinity, opController.signal)
-    request.raw.on('close', () => {
-      if (request.raw.aborted) {
-        this.log('request aborted by client')
-        opController.abort()
+    const cleanupFn = (): void => {
+      if (request.raw.readableAborted) {
+        this.log.trace('request aborted by client for url "%s"', url)
+      } else if (request.raw.destroyed) {
+        this.log.trace('request destroyed for url "%s"', url)
+      } else if (request.raw.complete) {
+        this.log.trace('request closed or ended in completed state for url "%s"', url)
+      } else {
+        this.log.trace('request closed or ended gracefully for url "%s"', url)
       }
-    })
+      // we want to stop all further processing because the request is closed
+      opController.abort()
+    }
+    /**
+     * The 'close' event is emitted when the stream and any of its underlying resources (a file descriptor, for example) have been closed. The event indicates that no more events will be emitted, and no further computation will occur.
+     * A Readable stream will always emit the 'close' event if it is created with the emitClose option.
+     *
+     * @see https://nodejs.org/api/stream.html#event-close_1
+     */
+    request.raw.on('close', cleanupFn)
+
     await this.isReady
     const resp = await this.heliaFetch(url, { signal: opController.signal, redirect: 'manual' })
     await this.#convertVerifiedFetchResponseToFastifyReply(resp, reply)
