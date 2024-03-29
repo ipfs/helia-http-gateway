@@ -9,6 +9,46 @@ fi
 # You have to pass `DEBUG=" " to disable debugging when using this script`
 export DEBUG=${DEBUG:-"helia-http-gateway,helia-http-gateway:server,helia-http-gateway:*:helia-fetch"}
 export PORT=${PORT:-8080}
+EXIT_CODE=0
+
+cleanup_until_death_called=false
+cleanup_until_death() {
+  if [ "$cleanup_until_death_called" = true ]; then
+    echo "cleanup_until_death_called already called"
+    return
+  fi
+  echo "cleanup_until_death called"
+  cleanup_until_death_called=true
+  if [ "$gateway_already_running" != true ]; then
+    lsof -i TCP:$PORT | grep LISTEN | awk '{print $2}' | xargs --no-run-if-empty kill -9
+
+    echo "waiting for the gateway to exit"
+    npx wait-on "tcp:$PORT" -t 10000 -r # wait for the port to be released
+  fi
+
+
+  exit $EXIT_CODE
+}
+
+trap cleanup_until_death EXIT
+
+# Before starting, output all env vars that helia-http-gateway uses
+echo "DEBUG=$DEBUG"
+echo "FASTIFY_DEBUG=$FASTIFY_DEBUG"
+echo "PORT=$PORT"
+echo "HOST=$HOST"
+echo "USE_SUBDOMAINS=$USE_SUBDOMAINS"
+echo "METRICS=$METRICS"
+echo "USE_BITSWAP=$USE_BITSWAP"
+echo "USE_TRUSTLESS_GATEWAYS=$USE_TRUSTLESS_GATEWAYS"
+echo "TRUSTLESS_GATEWAYS=$TRUSTLESS_GATEWAYS"
+echo "USE_LIBP2P=$USE_LIBP2P"
+echo "ECHO_HEADERS=$ECHO_HEADERS"
+echo "USE_DELEGATED_ROUTING=$USE_DELEGATED_ROUTING"
+echo "DELEGATED_ROUTING_V1_HOST=$DELEGATED_ROUTING_V1_HOST"
+echo "FILE_DATASTORE_PATH=$FILE_DATASTORE_PATH"
+echo "FILE_BLOCKSTORE_PATH=$FILE_BLOCKSTORE_PATH"
+echo "ALLOW_UNHANDLED_ERROR_RECOVERY=$ALLOW_UNHANDLED_ERROR_RECOVERY"
 
 gateway_already_running=false
 if nc -z localhost $PORT; then
@@ -21,55 +61,33 @@ start_gateway() {
     echo "gateway is already running"
     return
   fi
-  npm run build
-
+  # if DEBUG_NO_BUILD is set, then we assume the gateway is already built
+  if [ "$DEBUG_NO_BUILD" != true ]; then
+    npm run build
+  fi
+  echo "starting gateway..."
   # npx clinic doctor --open=false -- node dist/src/index.js &
-  node dist/src/index.js &
+  (node --trace-warnings dist/src/index.js) &
+  process_id=$!
   # echo "process id: $!"
+  npx wait-on "tcp:$PORT" -t 10000 || {
+    EXIT_CODE=1
+    cleanup_until_death
+  }
 }
-start_gateway & process_pid=$!
+start_gateway
 
 ensure_gateway_running() {
-  npx wait-on "tcp:$PORT" -t 5000 || exit 1
+  npx wait-on "tcp:$PORT" -t 5000 || {
+    EXIT_CODE=1
+    cleanup_until_death
+  }
 }
 
-
-cleanup_called=false
-cleanup() {
-  if [ "$cleanup_called" = true ]; then
-    echo "cleanup already called"
-    return
-  fi
-  # kill $process_pid
-  # when we're done, ensure the process is killed by sending a SIGTEM
-  # kill -s SIGTERM $process_pid
-  # kill any process listening on $PORT
-  # fuser -k $PORT/tcp
-  # kill any process listening on $PORT with SIGTERM
-
-  if [ "$gateway_already_running" != true ]; then
-    kill -s SIGINT $(lsof -i :$PORT -t)
-    return
-  fi
-
-  exit 1
-}
-
-trap cleanup SIGINT
-trap cleanup SIGTERM
-
-# if we get a non-zero exit code, we know the server is no longer listening
-# we should also exit early after 4 loops
-# iterations=0
-# max_loops=1
+max_timeout=${1:-15}
 while [ $? -ne 1 ]; do
-#   # iterations=$((iterations+1))
-#   if [ $iterations -gt $max_loops ]; then
-#     echo "exiting after $max_loops loops"
-#     break
-#   fi
   ensure_gateway_running
-  ./debugging/test-gateways.sh 30 2>&1 | tee -a debugging/test-gateways.log
+  ./debugging/test-gateways.sh $max_timeout # 2>&1 | tee -a debugging/test-gateways.log
 done
 
-cleanup
+cleanup_until_death
