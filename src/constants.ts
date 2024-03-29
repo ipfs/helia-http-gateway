@@ -55,3 +55,28 @@ export const USE_DELEGATED_ROUTING = process.env.USE_DELEGATED_ROUTING !== 'fals
  * If not set, we will default delegated routing to `https://delegated-ipfs.dev`
  */
 export const DELEGATED_ROUTING_V1_HOST = process.env.DELEGATED_ROUTING_V1_HOST ?? 'https://delegated-ipfs.dev'
+
+/**
+ * You can set `RECOVERABLE_ERRORS` to a comma delimited list of errors to recover from.
+ * If you want to recover from all errors, set `RECOVERABLE_ERRORS` to 'all'.
+ * If you want to recover from no errors, set `RECOVERABLE_ERRORS` to ''.
+ */
+export const RECOVERABLE_ERRORS = (() => {
+  if (process.env.RECOVERABLE_ERRORS === 'all') {
+    return 'all'
+  }
+  if (process.env.RECOVERABLE_ERRORS === '') {
+    return ''
+  }
+  return process.env.RECOVERABLE_ERRORS?.split(',') ?? 'all'
+})()
+
+export const ALLOW_UNHANDLED_ERROR_RECOVERY = (() => {
+  if (RECOVERABLE_ERRORS === 'all') {
+    return true
+  }
+  if (RECOVERABLE_ERRORS === '') {
+    return false
+  }
+  return RECOVERABLE_ERRORS.length > 0
+})()

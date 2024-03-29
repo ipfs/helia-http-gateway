@@ -242,13 +242,7 @@ export class HeliaServer {
     }
   }
 
-  /**
-   * Fetches a content for a subdomain, which basically queries delegated routing API and then fetches the path from helia.
-   */
-  async fetch ({ request, reply }: RouteHandler): Promise<void> {
-    const url = this.#getFullUrlFromFastifyRequest(request)
-    this.log('fetching url "%s" with @helia/verified-fetch', url)
-
+  #getRequestAwareSignal (request: FastifyRequest, url = this.#getFullUrlFromFastifyRequest(request), timeout?: number): AbortSignal {
     const opController = new AbortController()
     setMaxListeners(Infinity, opController.signal)
     const cleanupFn = (): void => {
@@ -272,8 +266,26 @@ export class HeliaServer {
      */
     request.raw.on('close', cleanupFn)
 
+    if (timeout != null) {
+      setTimeout(() => {
+        this.log.trace('request timed out for url "%s"', url)
+        opController.abort()
+      }, timeout)
+    }
+    return opController.signal
+  }
+
+  /**
+   * Fetches a content for a subdomain, which basically queries delegated routing API and then fetches the path from helia.
+   */
+  async fetch ({ request, reply }: RouteHandler): Promise<void> {
+    const url = this.#getFullUrlFromFastifyRequest(request)
+    this.log('fetching url "%s" with @helia/verified-fetch', url)
+
+    const signal = this.#getRequestAwareSignal(request, url)
+
     await this.isReady
-    const resp = await this.heliaFetch(url, { signal: opController.signal, redirect: 'manual' })
+    const resp = await this.heliaFetch(url, { signal, redirect: 'manual' })
     await this.#convertVerifiedFetchResponseToFastifyReply(resp, reply)
   }
 
@@ -319,10 +331,11 @@ export class HeliaServer {
   /**
    * GC the node
    */
-  async gc ({ reply }: RouteHandler): Promise<void> {
+  async gc ({ reply, request }: RouteHandler): Promise<void> {
     await this.isReady
     this.log('running `gc` on Helia node')
-    await this.heliaNode?.gc({ signal: AbortSignal.timeout(20000) })
+    const signal = this.#getRequestAwareSignal(request, undefined, 20000)
+    await this.heliaNode?.gc({ signal })
     await reply.code(200).send('OK')
   }
 
