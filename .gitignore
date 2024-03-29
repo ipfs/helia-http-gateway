@@ -23,11 +23,3 @@ pdf
 plugins
 png
 grafana.db
-gwc-report.json
-debugging/test-gateways.log
-.env*
-*.nix
-.tool-versions
-.direnv
-permutation-logs
-*.csv
