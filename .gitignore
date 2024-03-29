@@ -7,5 +7,25 @@ node_modules
 package-lock.json
 yarn.lock
 .vscode
-playwright-report
-test
+
+# env config files
+.env*
+*.nix
+.tool-versions
+.direnv
+
+# helia-http-gateway specific files
+/test-results/
+/playwright-report/
+/playwright/.cache/
+screenshots
+.envrc
+scripts/tmp/fixtures
+scripts/tmp/kubo-path.txt
+test/fixtures/e2e
+
+# helia-http-gateway debugging files
+debugging/test-gateways.log
+permutation-logs
+*.csv
+*.log

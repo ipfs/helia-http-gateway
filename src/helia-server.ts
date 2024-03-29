@@ -88,6 +88,21 @@ export class HeliaServer {
         handler: async (request, reply): Promise<void> => this.gc({ request, reply })
       },
       {
+        path: '/api/v0/http-gateway-healthcheck',
+        type: 'GET',
+        handler: async (request, reply): Promise<void> => {
+          const signal = AbortSignal.timeout(1000)
+          try {
+            // echo "hello world" | npx kubo add --cid-version 1 -Q --inline
+            // inline CID is bafkqaddimvwgy3zao5xxe3debi
+            await this.heliaFetch('ipfs://bafkqaddimvwgy3zao5xxe3debi', { signal, redirect: 'follow' })
+            await reply.code(200).send('OK')
+          } catch (error) {
+            await reply.code(500).send(error)
+          }
+        }
+      },
+      {
         path: '/*',
         type: 'GET',
         handler: async (request, reply): Promise<void> => {
@@ -158,7 +173,7 @@ export class HeliaServer {
       encodedDnsLink = dnsLinkLabelEncoder(address)
     }
 
-    const finalUrl = `//${cidv1Address ?? encodedDnsLink}.${namespace}.${request.hostname}/${relativePath ?? ''}`
+    const finalUrl = `${request.protocol}://${cidv1Address ?? encodedDnsLink}.${namespace}.${request.hostname}/${relativePath ?? ''}`
     this.log('redirecting to final URL:', finalUrl)
     await reply
       .headers({
@@ -198,6 +213,7 @@ export class HeliaServer {
       return
     }
     if (verifiedFetchResponse.body == null) {
+      // this should never happen
       this.log('verified-fetch response has no body')
       await reply.code(501).send('empty')
       return
@@ -226,6 +242,39 @@ export class HeliaServer {
     }
   }
 
+  #getRequestAwareSignal (request: FastifyRequest, url = this.#getFullUrlFromFastifyRequest(request), timeout?: number): AbortSignal {
+    const opController = new AbortController()
+    setMaxListeners(Infinity, opController.signal)
+    const cleanupFn = (): void => {
+      if (request.raw.readableAborted) {
+        this.log.trace('request aborted by client for url "%s"', url)
+      } else if (request.raw.destroyed) {
+        this.log.trace('request destroyed for url "%s"', url)
+      } else if (request.raw.complete) {
+        this.log.trace('request closed or ended in completed state for url "%s"', url)
+      } else {
+        this.log.trace('request closed or ended gracefully for url "%s"', url)
+      }
+      // we want to stop all further processing because the request is closed
+      opController.abort()
+    }
+    /**
+     * The 'close' event is emitted when the stream and any of its underlying resources (a file descriptor, for example) have been closed. The event indicates that no more events will be emitted, and no further computation will occur.
+     * A Readable stream will always emit the 'close' event if it is created with the emitClose option.
+     *
+     * @see https://nodejs.org/api/stream.html#event-close_1
+     */
+    request.raw.on('close', cleanupFn)
+
+    if (timeout != null) {
+      setTimeout(() => {
+        this.log.trace('request timed out for url "%s"', url)
+        opController.abort()
+      }, timeout)
+    }
+    return opController.signal
+  }
+
   /**
    * Fetches a content for a subdomain, which basically queries delegated routing API and then fetches the path from helia.
    */
@@ -233,14 +282,8 @@ export class HeliaServer {
     const url = this.#getFullUrlFromFastifyRequest(request)
     this.log('fetching url "%s" with @helia/verified-fetch', url)
 
-    const opController = new AbortController()
-    setMaxListeners(Infinity, opController.signal)
-    request.raw.on('close', () => {
-      if (request.raw.aborted) {
-        this.log('request aborted by client')
-        opController.abort()
-      }
-    })
+    const signal = this.#getRequestAwareSignal(request, url)
+
     await this.isReady
     // pass headers from the original request (IncomingHttpHeaders) to HeadersInit
     const headers: Record<string, string> = {}
@@ -253,7 +296,7 @@ export class HeliaServer {
         }
       }
     }
-    const resp = await this.heliaFetch(url, { signal: opController.signal, redirect: 'manual', headers })
+    const resp = await this.heliaFetch(url, { signal, redirect: 'manual', headers })
     await this.#convertVerifiedFetchResponseToFastifyReply(resp, reply)
   }
 
@@ -299,10 +342,11 @@ export class HeliaServer {
   /**
    * GC the node
    */
-  async gc ({ reply }: RouteHandler): Promise<void> {
+  async gc ({ reply, request }: RouteHandler): Promise<void> {
     await this.isReady
     this.log('running `gc` on Helia node')
-    await this.heliaNode?.gc({ signal: AbortSignal.timeout(20000) })
+    const signal = this.#getRequestAwareSignal(request, undefined, 20000)
+    await this.heliaNode?.gc({ signal })
     await reply.code(200).send('OK')
   }
 

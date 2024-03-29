@@ -24,12 +24,12 @@ export async function getCustomHelia (): Promise<Helia> {
   }
 
   let blockstore: HeliaInit['blockstore'] | undefined
-  if (FILE_BLOCKSTORE_PATH != null) {
+  if (FILE_BLOCKSTORE_PATH != null && FILE_BLOCKSTORE_PATH !== '') {
     blockstore = new LevelBlockstore(FILE_BLOCKSTORE_PATH)
   }
 
   let datastore: HeliaInit['datastore'] | undefined
-  if (FILE_DATASTORE_PATH != null) {
+  if (FILE_DATASTORE_PATH != null && FILE_DATASTORE_PATH !== '') {
     datastore = new LevelDatastore(FILE_DATASTORE_PATH)
   }
 

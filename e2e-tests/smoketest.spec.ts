@@ -3,15 +3,15 @@ import { PORT } from '../src/constants.js'
 
 // test all the same pages listed at https://probelab.io/websites/
 const pages = [
-  // 'blog.ipfs.tech', // timing out
+  'blog.ipfs.tech',
   'blog.libp2p.io',
   'consensuslab.world',
   'docs.ipfs.tech',
   'docs.libp2p.io',
   // 'drand.love', // no dnsaddr or dnslink TXT record, only "x-ipfs-path" header (supported only by ipfs-companion and brave)
-  // 'fil.org', // timing out
-  // 'filecoin.io', // timing out
-  // 'green.filecoin.io', // timing out
+  'fil.org',
+  'filecoin.io',
+  'green.filecoin.io',
   'ipfs.tech',
   'ipld.io',
   'libp2p.io',
@@ -21,9 +21,9 @@ const pages = [
   'research.protocol.ai',
   'singularity.storage',
   'specs.ipfs.tech',
-  // 'strn.network' // redirects to saturn.tech
-  'saturn.tech'
-  // 'web3.storage' // timing out
+  // 'strn.network', // redirects to saturn.tech
+  'saturn.tech',
+  'web3.storage'
 ]
 
 // increase default test timeout to 2 minutes
