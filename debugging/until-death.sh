@@ -21,8 +21,11 @@ cleanup_until_death() {
   cleanup_until_death_called=true
   if [ "$gateway_already_running" != true ]; then
     lsof -i TCP:$PORT | grep LISTEN | awk '{print $2}' | xargs --no-run-if-empty kill -9
+
+    echo "waiting for the gateway to exit"
     npx wait-on "tcp:$PORT" -t 10000 -r # wait for the port to be released
   fi
+
 
   exit $EXIT_CODE
 }
@@ -62,9 +65,9 @@ start_gateway() {
   if [ "$DEBUG_NO_BUILD" != true ]; then
     npm run build
   fi
-
+  echo "starting gateway..."
   # npx clinic doctor --open=false -- node dist/src/index.js &
-  node --trace-warnings dist/src/index.js &
+  (node --trace-warnings dist/src/index.js) &
   process_id=$!
   # echo "process id: $!"
   npx wait-on "tcp:$PORT" -t 10000 || {

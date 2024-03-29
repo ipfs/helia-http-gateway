@@ -12,7 +12,8 @@
 #
 
 # globals.. same for all configurations
-export DEBUG="helia*,helia*:trace,libp2p*,libp2p*:trace"
+# export DEBUG="helia*,helia*:trace,libp2p*,libp2p*:trace"
+export DEBUG="*,*:trace"
 unset FASTIFY_DEBUG
 export PORT=8080
 export HOST="0.0.0.0"
@@ -129,6 +130,7 @@ cleanup_permutations() {
   cleanup_permutations_called=true
 
   kill -s TERM $subshell_pid
+  echo "sent TERM signal to subshell"
   wait $subshell_pid # wait for the process to exit
 
   npx wait-on "tcp:$PORT" -t 10000 -r # wait for the port to be released
