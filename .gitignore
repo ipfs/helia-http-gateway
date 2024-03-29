@@ -17,3 +17,17 @@ screenshots
 scripts/tmp/fixtures
 scripts/tmp/kubo-path.txt
 test/fixtures/e2e
+alerting
+csv
+pdf
+plugins
+png
+grafana.db
+gwc-report.json
+debugging/test-gateways.log
+.env*
+*.nix
+.tool-versions
+.direnv
+permutation-logs
+*.csv

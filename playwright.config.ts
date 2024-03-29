@@ -64,10 +64,11 @@ export default defineConfig({
     // Tiros does not re-use the existing server.
     reuseExistingServer: process.env.CI == null,
     env: {
+      METRICS: process.env.METRICS ?? 'false',
       DEBUG: process.env.DEBUG ?? ' ',
       // we save to the filesystem so github CI can cache the data.
-      FILE_BLOCKSTORE_PATH: join(process.cwd(), 'test', 'fixtures', 'e2e', 'blockstore'),
-      FILE_DATASTORE_PATH: join(process.cwd(), 'test', 'fixtures', 'e2e', 'datastore')
+      FILE_BLOCKSTORE_PATH: process.env.FILE_BLOCKSTORE_PATH ?? join(process.cwd(), 'test', 'fixtures', 'e2e', 'blockstore'),
+      FILE_DATASTORE_PATH: process.env.FILE_DATASTORE_PATH ?? (process.cwd(), 'test', 'fixtures', 'e2e', 'datastore')
     }
   }
 })

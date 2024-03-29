@@ -249,7 +249,7 @@ const stopWebServer = async (): Promise<void> => {
 }
 
 let shutdownRequested = false
-async function closeGracefully (signal: number): Promise<void> {
+async function closeGracefully (signal: number | string): Promise<void> {
   log(`Received signal to terminate: ${signal}`)
   if (shutdownRequested) {
     log('closeGracefully: shutdown already requested, exiting callback.')
@@ -268,3 +268,26 @@ async function closeGracefully (signal: number): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   process.once(signal, closeGracefully)
 })
+
+/**
+ * Unless ALLOW_UNHANDLED_ERROR_RECOVERY is set to false, we will attempt to recover from named unhandled errors in the recoverableErrors array.
+ */
+// const allowUnhandledErrorRecovery = process.env.ALLOW_UNHANDLED_ERROR_RECOVERY !== 'false'
+// const recoverableErrors = ['ERR_STREAM_PREMATURE_CLOSE']
+// process.on('uncaughtException', (error: any) => {
+//   log.error('Uncaught Exception:', error)
+//   if (allowUnhandledErrorRecovery && recoverableErrors.includes(error.code)) {
+//     log.trace('Ignoring known error')
+//     return
+//   }
+//   void closeGracefully('SIGTERM')
+// })
+
+// process.on('unhandledRejection', (error: any) => {
+//   log.error('Unhandled rejection:', error)
+//   if (allowUnhandledErrorRecovery && recoverableErrors.includes(error.code)) {
+//     log.trace('Ignoring known error')
+//     return
+//   }
+//   void closeGracefully('SIGTERM')
+// })

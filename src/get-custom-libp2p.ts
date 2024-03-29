@@ -96,6 +96,10 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
         if (proto === IP4 || proto === IP6) {
           return Boolean(isPrivate(`${address}`))
         }
+        // tmp: only allow dialing of IP6 addresses. see https://github.com/ipfs/helia-http-gateway/issues/18#issuecomment-2027715864
+        if (proto === IP4) {
+          return true
+        }
 
         // all other addresses are ok
         return false
