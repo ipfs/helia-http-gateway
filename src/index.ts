@@ -68,6 +68,7 @@
  * | `ECHO_HEADERS`              | A debug flag to indicate whether you want to output request and response headers                                                               | `false`                                                                                                                 |
  * | `USE_DELEGATED_ROUTING`     | Whether to use the delegated routing v1 API                                                                                                    | `true`                                                                                                                  |
  * | `DELEGATED_ROUTING_V1_HOST` | Hostname to use for delegated routing v1                                                                                                       | `https://delegated-ipfs.dev`                                                                                            |
+ * | `RECOVERABLE_ERRORS`        | A comma delimited list of errors to recover from. These errors are checked in `uncaughtException` and `unhandledRejection` callbacks           | `all`                                                                                            |
  *
  * <!--
  * TODO: currently broken when used in docker, but they work when running locally (you can cache datastore and blockstore locally to speed things up if you want)
@@ -159,7 +160,7 @@ import compress from '@fastify/compress'
 import cors from '@fastify/cors'
 import Fastify from 'fastify'
 import metricsPlugin from 'fastify-metrics'
-import { HOST, PORT, METRICS, ECHO_HEADERS, FASTIFY_DEBUG } from './constants.js'
+import { HOST, PORT, METRICS, ECHO_HEADERS, FASTIFY_DEBUG, RECOVERABLE_ERRORS, ALLOW_UNHANDLED_ERROR_RECOVERY } from './constants.js'
 import { HeliaServer, type RouteEntry } from './helia-server.js'
 import { logger } from './logger.js'
 
@@ -269,25 +270,14 @@ async function closeGracefully (signal: number | string): Promise<void> {
   process.once(signal, closeGracefully)
 })
 
-/**
- * Unless ALLOW_UNHANDLED_ERROR_RECOVERY is set to false, we will attempt to recover from named unhandled errors in the recoverableErrors array.
- */
-const allowUnhandledErrorRecovery = process.env.ALLOW_UNHANDLED_ERROR_RECOVERY !== 'false'
-const recoverableErrors = ['ERR_STREAM_PREMATURE_CLOSE']
-process.on('uncaughtException', (error: any) => {
+const uncaughtHandler = (error: any): void => {
   log.error('Uncaught Exception:', error)
-  if (allowUnhandledErrorRecovery && recoverableErrors.includes(error.code)) {
-    log.trace('Ignoring known error')
+  if (ALLOW_UNHANDLED_ERROR_RECOVERY && (RECOVERABLE_ERRORS === 'all' || RECOVERABLE_ERRORS.includes(error?.code) || RECOVERABLE_ERRORS.includes(error?.name))) {
+    log.trace('Ignoring error')
     return
   }
   void closeGracefully('SIGTERM')
-})
+}
 
-process.on('unhandledRejection', (error: any) => {
-  log.error('Unhandled rejection:', error)
-  if (allowUnhandledErrorRecovery && recoverableErrors.includes(error.code)) {
-    log.trace('Ignoring known error')
-    return
-  }
-  void closeGracefully('SIGTERM')
-})
+process.on('uncaughtException', uncaughtHandler)
+process.on('unhandledRejection', uncaughtHandler)
