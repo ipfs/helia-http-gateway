@@ -8,6 +8,12 @@ package-lock.json
 yarn.lock
 .vscode
 
+# env config files
+.env*
+*.nix
+.tool-versions
+.direnv
+
 # helia-http-gateway specific files
 /test-results/
 /playwright-report/
@@ -17,3 +23,9 @@ screenshots
 scripts/tmp/fixtures
 scripts/tmp/kubo-path.txt
 test/fixtures/e2e
+
+# helia-http-gateway debugging files
+debugging/test-gateways.log
+permutation-logs
+*.csv
+*.log
