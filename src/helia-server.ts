@@ -336,7 +336,6 @@ export class HeliaServer {
     this.log('running `gc` on Helia node')
     const signal = this.#getRequestAwareSignal(request, undefined, 20000)
     await this.heliaNode?.gc({ signal })
-    await this.heliaNode?.gc()
     await reply.code(200).send('OK')
   }
 
