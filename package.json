@@ -120,7 +120,7 @@
     "debug": "^4.3.4",
     "dotenv": "^16.4.5",
     "execa": "^8.0.1",
-    "glob": "^10.3.10",
+    "glob": "^10.3.12",
     "patch-package": "^8.0.0",
     "typescript": "5.x",
     "wait-on": "^7.2.0"
