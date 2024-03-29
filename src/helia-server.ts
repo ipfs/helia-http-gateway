@@ -334,10 +334,8 @@ export class HeliaServer {
   async gc ({ reply, request }: RouteHandler): Promise<void> {
     await this.isReady
     this.log('running `gc` on Helia node')
-    // const signal = this.#getRequestAwareSignal(request, undefined, 20000)
-    // await this.heliaNode?.gc({ signal })
-    await this.heliaNode?.gc({ signal: AbortSignal.timeout(20000) })
-    await this.heliaNode?.gc()
+    const signal = this.#getRequestAwareSignal(request, undefined, 20000)
+    await this.heliaNode?.gc({ signal })
     await reply.code(200).send('OK')
   }
 
