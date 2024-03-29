@@ -177,6 +177,12 @@ $ npm run test:e2e-flame # Run the dev server with clinicjs flame, execute e2e t
 Running with `METRICS=true` will enable collecting Fastify/libp2p metrics and
 will expose a prometheus collection endpoint at <http://localhost:8080/metrics>
 
+js-libp2p metrics are collected by default, but can be disabled by setting `USE_LIBP2P_METRICS=false`. Find out more details at https://github.com/libp2p/js-libp2p/tree/main/packages/metrics-prometheus
+
+### Viewing metrics
+
+See [Metrics config](./config/README.md#metrics) for more information on how to view the generated metrics.
+
 # Install
 
 ```console
