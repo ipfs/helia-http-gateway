@@ -15,7 +15,7 @@ debug.enable('kubo-init*')
 
 const kuboFilePath = './scripts/tmp/kubo-path.txt'
 const GWC_FIXTURES_PATH = `${dirname(kuboFilePath)}/fixtures`
-const GWC_DOCKER_IMAGE = process.env.GWC_DOCKER_IMAGE || 'ghcr.io/ipfs/gateway-conformance:v0.5.0'
+const GWC_DOCKER_IMAGE = process.env.GWC_DOCKER_IMAGE ?? 'ghcr.io/ipfs/gateway-conformance:v0.5.0'
 
 async function main () {
   await $`mkdir -p ${dirname(kuboFilePath)}`
@@ -87,8 +87,14 @@ async function writeKuboMetaData () {
 async function configureKubo (tmpDir) {
   const execaOptions = getExecaOptions({ tmpDir })
   try {
-    await $(execaOptions)`npx -y kubo config Addresses.Gateway /ip4/127.0.0.1/tcp/8080`
+    await $(execaOptions)`npx -y kubo config Addresses.Gateway /ip4/127.0.0.1/tcp/${process.env.KUBO_PORT ?? 8081}`
+    await $(execaOptions)`npx -y kubo config --json Bootstrap '[]'`
+    await $(execaOptions)`npx -y kubo config --json Swarm.DisableNatPortMap true`
+    await $(execaOptions)`npx -y kubo config --json Discovery.MDNS.Enabled false`
+    await $(execaOptions)`npx -y kubo config --json Gateway.NoFetch true`
     await $(execaOptions)`npx -y kubo config --json Gateway.ExposeRoutingAPI true`
+    await $(execaOptions)`npx -y kubo config --json Gateway.HTTPHeaders.Access-Control-Allow-Origin '["*"]'`
+    await $(execaOptions)`npx -y kubo config --json Gateway.HTTPHeaders.Access-Control-Allow-Methods '["GET", "POST", "PUT", "OPTIONS"]'`
     log('Kubo configured')
   } catch (e) {
     error('Failed to configure Kubo', e)
