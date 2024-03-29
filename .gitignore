@@ -17,3 +17,8 @@ screenshots
 scripts/tmp/fixtures
 scripts/tmp/kubo-path.txt
 test/fixtures/e2e
+config/grafana/alerting
+config/grafana/grafana.db
+.DS_Store
+*.log
+.env*
