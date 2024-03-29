@@ -59,17 +59,6 @@ export class HeliaServer {
     this.log('heliaServer Started!')
     this.routes = [
       {
-        // without this non-wildcard postfixed path, the '/*' route will match first.
-        path: '/:ns(ipfs|ipns)/:address', // ipns/dnsLink or ipfs/cid
-        type: 'GET',
-        handler: async (request, reply): Promise<void> => this.handleEntry({ request, reply })
-      },
-      {
-        path: '/:ns(ipfs|ipns)/:address/*', // ipns/dnsLink/relativePath or ipfs/cid/relativePath
-        type: 'GET',
-        handler: async (request, reply): Promise<void> => this.handleEntry({ request, reply })
-      },
-      {
         path: '/api/v0/version',
         type: 'POST',
         handler: async (request, reply): Promise<void> => this.heliaVersion({ request, reply })
@@ -130,10 +119,7 @@ export class HeliaServer {
     ]
   }
 
-  /**
-   * Redirects to the subdomain gateway.
-   */
-  private async handleEntry ({ request, reply }: RouteHandler): Promise<void> {
+  #redirectUrl ({ request, reply }: RouteHandler): string | null {
     const { params } = request
     this.log('fetch request %s', request.url)
     const { ns: namespace, '*': relativePath, address } = params as EntryParams
@@ -141,14 +127,14 @@ export class HeliaServer {
     this.log('handling entry: ', { address, namespace, relativePath })
     if (!USE_SUBDOMAINS) {
       this.log('subdomains are disabled, fetching without subdomain')
-      return this.fetch({ request, reply })
+      return null
     } else {
       this.log('subdomains are enabled, redirecting to subdomain')
     }
 
     const { peerId, cid } = getIpnsAddressDetails(address)
     if (peerId != null) {
-      return this.fetch({ request, reply })
+      return null
     }
     const cidv1Address = cid?.toString()
 
@@ -173,14 +159,7 @@ export class HeliaServer {
       encodedDnsLink = dnsLinkLabelEncoder(address)
     }
 
-    const finalUrl = `${request.protocol}://${cidv1Address ?? encodedDnsLink}.${namespace}.${request.hostname}/${relativePath ?? ''}`
-    this.log('redirecting to final URL:', finalUrl)
-    await reply
-      .headers({
-        Location: finalUrl
-      })
-      .code(301)
-      .send()
+    return `${request.protocol}://${cidv1Address ?? encodedDnsLink}.${namespace}.${request.hostname}/${relativePath ?? ''}`
   }
 
   #getFullUrlFromFastifyRequest (request: FastifyRequest): string {
@@ -223,6 +202,12 @@ export class HeliaServer {
     for (const [headerName, headerValue] of verifiedFetchResponse.headers.entries()) {
       headers[headerName] = headerValue
     }
+
+    const redirectUrl = this.#redirectUrl({ request: reply.request, reply })
+    if (redirectUrl != null) {
+      headers.Location = redirectUrl
+    }
+
     // Fastify really does not like streams despite what the documentation and github issues say.
     const reader = verifiedFetchResponse.body.getReader()
     reply.raw.writeHead(verifiedFetchResponse.status, headers)
