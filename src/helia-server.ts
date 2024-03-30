@@ -163,20 +163,9 @@ export class HeliaServer {
   }
 
   #getFullUrlFromFastifyRequest (request: FastifyRequest): string {
-    let query = ''
-    if (request.query != null) {
-      this.log('request.query:', request.query)
-      const pairs: string[] = []
-      Object.keys(request.query).forEach((key: string) => {
-        const value = (request.query as Record<string, string>)[key]
-        pairs.push(`${key}=${value}`)
-      })
-      if (pairs.length > 0) {
-        query += '?' + pairs.join('&')
-      }
-    }
+    // FYI: request.url includes the query string
 
-    return `${request.protocol}://${request.hostname}${request.url}${query}`
+    return `${request.protocol}://${request.hostname}${request.url}`
   }
 
   #convertVerifiedFetchResponseToFastifyReply = async (verifiedFetchResponse: Response, reply: FastifyReply): Promise<void> => {
