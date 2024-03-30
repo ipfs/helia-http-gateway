@@ -95,12 +95,12 @@ export class HeliaServer {
         path: '/*',
         type: 'GET',
         handler: async (request, reply): Promise<void> => {
-          try {
-            await this.fetch({ request, reply })
-          } catch (err) {
-            this.log.error('error fetching:', err)
-            await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
-          }
+          // try {
+          await this.fetch({ request, reply })
+          // } catch (err) {
+          //   this.log.error('error fetching:', err)
+          //   await reply.code(500).send('try /ipfs/<cid> or /ipns/<name>')
+          // }
         }
       },
       {
