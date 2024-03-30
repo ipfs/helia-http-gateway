@@ -97,7 +97,8 @@ export class HeliaServer {
         handler: async (request, reply): Promise<void> => {
           try {
             await this.fetch({ request, reply })
-          } catch {
+          } catch (err) {
+            this.log.error('error fetching:', err)
             await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
           }
         }
@@ -155,7 +156,7 @@ export class HeliaServer {
       // finalUrl += encodeURIComponent(`?${new URLSearchParams(request.query).toString()}`)
     }
     let encodedDnsLink = address
-    if (!isInlinedDnsLink(address)) {
+    if (address != null && !isInlinedDnsLink(address)) {
       encodedDnsLink = dnsLinkLabelEncoder(address)
     }
 
