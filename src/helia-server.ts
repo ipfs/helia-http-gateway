@@ -92,6 +92,7 @@ export class HeliaServer {
         type: 'GET',
         handler: async (request, reply): Promise<void> => {
           const signal = AbortSignal.timeout(1000)
+          setMaxListeners(Infinity, signal)
           try {
             // echo "hello world" | npx kubo add --cid-version 1 -Q --inline
             // inline CID is bafkqaddimvwgy3zao5xxe3debi
