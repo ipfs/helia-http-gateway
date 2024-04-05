@@ -33,18 +33,19 @@ export async function getCustomHelia (): Promise<Helia> {
     datastore = new LevelDatastore(FILE_DATASTORE_PATH)
   }
 
+  const routers: HeliaInit['routers'] = []
+  if (USE_DELEGATED_ROUTING) {
+    routers.push(delegatedHTTPRouting(DELEGATED_ROUTING_V1_HOST))
+  }
+
   if (USE_LIBP2P || USE_BITSWAP) {
     return createHelia({
       libp2p: await getCustomLibp2p({ datastore }),
       blockstore,
       datastore,
-      blockBrokers
+      blockBrokers,
+      routers
     })
-  }
-
-  const routers: HeliaInit['routers'] = []
-  if (USE_DELEGATED_ROUTING) {
-    routers.push(delegatedHTTPRouting(DELEGATED_ROUTING_V1_HOST))
   }
 
   return createHeliaHTTP({
