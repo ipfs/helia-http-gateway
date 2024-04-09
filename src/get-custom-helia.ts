@@ -25,7 +25,8 @@ export async function getCustomHelia (): Promise<Helia> {
 
   let blockstore: HeliaInit['blockstore'] | undefined
   if (FILE_BLOCKSTORE_PATH != null && FILE_BLOCKSTORE_PATH !== '') {
-    blockstore = new FsBlockstore(FILE_BLOCKSTORE_PATH)
+    const fs = blockstore = new FsBlockstore(FILE_BLOCKSTORE_PATH)
+    await fs.open()
   }
 
   let datastore: HeliaInit['datastore'] | undefined
