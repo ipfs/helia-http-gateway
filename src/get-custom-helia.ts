@@ -31,7 +31,8 @@ export async function getCustomHelia (): Promise<Helia> {
 
   let datastore: HeliaInit['datastore'] | undefined
   if (FILE_DATASTORE_PATH != null && FILE_DATASTORE_PATH !== '') {
-    datastore = new LevelDatastore(FILE_DATASTORE_PATH)
+    const db = datastore = new LevelDatastore(FILE_DATASTORE_PATH)
+    await db.open()
   }
 
   const routers: HeliaInit['routers'] = []
