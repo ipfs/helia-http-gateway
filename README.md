@@ -95,7 +95,7 @@ $ npm start
 <!--
 TODO: currently broken when used in docker, but they work when running locally (you can cache datastore and blockstore locally to speed things up if you want)
 | `FILE_DATASTORE_PATH` | Path to use with a datastore-level passed to Helia as the datastore | `null`; memory datastore is used by default. |
-| `FILE_BLOCKSTORE_PATH` | Path to use with a blockstore-level passed to Helia as the blockstore | `null`; memory blockstore is used by default. |
+| `FILE_BLOCKSTORE_PATH` | Path to use with a blockstore-fs passed to Helia as the blockstore | `null`; memory blockstore is used by default. |
 -->
 
 See the source of truth for all `process.env.<name>` environment variables at [src/constants.ts](src/constants.ts).
