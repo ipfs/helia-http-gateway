@@ -2,7 +2,7 @@ import { bitswap, trustlessGateway } from '@helia/block-brokers'
 import { createHeliaHTTP } from '@helia/http'
 import { delegatedHTTPRouting } from '@helia/routers'
 import { type HeliaInit } from '@helia/utils'
-import { LevelBlockstore } from 'blockstore-level'
+import { FsBlockstore } from 'blockstore-fs'
 import { LevelDatastore } from 'datastore-level'
 import { createHelia } from 'helia'
 import { DELEGATED_ROUTING_V1_HOST, FILE_BLOCKSTORE_PATH, FILE_DATASTORE_PATH, TRUSTLESS_GATEWAYS, USE_BITSWAP, USE_DELEGATED_ROUTING, USE_LIBP2P, USE_TRUSTLESS_GATEWAYS } from './constants.js'
@@ -25,7 +25,7 @@ export async function getCustomHelia (): Promise<Helia> {
 
   let blockstore: HeliaInit['blockstore'] | undefined
   if (FILE_BLOCKSTORE_PATH != null && FILE_BLOCKSTORE_PATH !== '') {
-    blockstore = new LevelBlockstore(FILE_BLOCKSTORE_PATH)
+    blockstore = new FsBlockstore(FILE_BLOCKSTORE_PATH)
   }
 
   let datastore: HeliaInit['datastore'] | undefined
