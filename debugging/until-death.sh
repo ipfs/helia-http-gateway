@@ -27,7 +27,6 @@ cleanup_until_death() {
     npx wait-on "tcp:$HTTP_PORT" -t 10000 -r # wait for the port to be released
   fi
 
-
   exit $EXIT_CODE
 }
 

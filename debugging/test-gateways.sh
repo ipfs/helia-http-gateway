@@ -20,7 +20,7 @@ trap cleanup_gateway_test EXIT
 
 HTTP_PORT=${HTTP_PORT:-8080}
 RPC_PORT=${RPC_PORT:-5001}
-# If localhost:$PORT is not listening, then exit with non-zero error code
+# If localhost:$HTTP_PORT is not listening, then exit with non-zero error code
 if ! nc -z localhost $HTTP_PORT; then
   echo "localhost:$HTTP_PORT is not listening"
   exit 1
@@ -54,7 +54,7 @@ test_website  http://localhost:$HTTP_PORT/ipns/docs.ipfs.tech
 
 test_website  http://localhost:$HTTP_PORT/ipns/docs.libp2p.io
 
-# test_website  http://localhost:$PORT/ipns/drand.love #drand.love is not publishing dnslink records
+# test_website  http://localhost:$HTTP_PORT/ipns/drand.love #drand.love is not publishing dnslink records
 
 test_website  http://localhost:$HTTP_PORT/ipns/fil.org
 
