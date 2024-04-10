@@ -158,90 +158,50 @@
 
 import compress from '@fastify/compress'
 import cors from '@fastify/cors'
-import Fastify from 'fastify'
+import { createVerifiedFetch } from '@helia/verified-fetch'
+import fastify, { type FastifyInstance, type RouteOptions } from 'fastify'
 import metricsPlugin from 'fastify-metrics'
-import { HOST, PORT, METRICS, ECHO_HEADERS, FASTIFY_DEBUG, RECOVERABLE_ERRORS, ALLOW_UNHANDLED_ERROR_RECOVERY } from './constants.js'
-import { HeliaServer, type RouteEntry } from './helia-server.js'
+import { HOST, HTTP_PORT, RPC_PORT, METRICS, ECHO_HEADERS, FASTIFY_DEBUG, RECOVERABLE_ERRORS, ALLOW_UNHANDLED_ERROR_RECOVERY } from './constants.js'
+import { contentTypeParser } from './content-type-parser.js'
+import { getCustomHelia } from './get-custom-helia.js'
+import { httpGateway } from './helia-http-gateway.js'
+import { rpcApi } from './helia-rpc-api.js'
 import { logger } from './logger.js'
 
 const log = logger.forComponent('index')
 
-const heliaServer = new HeliaServer(logger)
-await heliaServer.isReady
+const helia = await getCustomHelia()
+const fetch = await createVerifiedFetch(helia, { contentTypeParser })
 
-// Add the prometheus middleware
-const app = Fastify({
-  logger: {
-    enabled: FASTIFY_DEBUG !== '',
-    msgPrefix: 'helia-http-gateway:fastify ',
-    level: 'info',
-    transport: {
-      target: 'pino-pretty'
-    }
-  }
-})
-
-if (METRICS === 'true') {
-  await app.register(metricsPlugin.default, { endpoint: '/metrics' })
-}
-
-await app.register(cors, {
-  /**
-   * @see https://github.com/ipfs/gateway-conformance/issues/186
-   * @see https://github.com/ipfs/gateway-conformance/blob/d855ec4fb9dac4a5aaecf3776037b005cc74c566/tests/path_gateway_cors_test.go#L16-L56
-   */
-  allowedHeaders: ['Content-Type', 'Range', 'User-Agent', 'X-Requested-With'],
-  origin: '*',
-  exposedHeaders: [
-    'Content-Range',
-    'Content-Length',
-    'X-Ipfs-Path',
-    'X-Ipfs-Roots',
-    'X-Chunked-Output',
-    'X-Stream-Output'
-  ],
-  methods: ['GET', 'HEAD', 'OPTIONS'],
-  strictPreflight: false,
-  preflightContinue: true
-})
-await app.register(compress, {
-  global: true
-})
-heliaServer.routes.forEach(({ path, type, handler }: RouteEntry) => {
-  app.route({
-    method: type,
-    url: path,
-    handler
+const [rpcApiServer, httpGatewayServer] = await Promise.all([
+  createServer('rpc-api', rpcApi({
+    logger,
+    helia,
+    fetch
+  }), {
+    metrics: false
+  }),
+  createServer('http-gateway', httpGateway({
+    logger,
+    helia,
+    fetch
+  }), {
+    metrics: METRICS === 'true'
   })
-})
+])
 
-if ([ECHO_HEADERS].includes(true)) {
-  app.addHook('onRequest', async (request, reply) => {
-    if (ECHO_HEADERS) {
-      log('fastify hook onRequest: echoing headers:')
-      Object.keys(request.headers).forEach((headerName) => {
-        log('\t %s: %s', headerName, request.headers[headerName])
-      })
-    }
-  })
+await Promise.all([
+  rpcApiServer.listen({ port: RPC_PORT, host: HOST }),
+  httpGatewayServer.listen({ port: HTTP_PORT, host: HOST })
+])
 
-  app.addHook('onSend', async (request, reply, payload) => {
-    if (ECHO_HEADERS) {
-      log('fastify hook onSend: echoing headers:')
-      const responseHeaders = reply.getHeaders()
-      Object.keys(responseHeaders).forEach((headerName) => {
-        log('\t %s: %s', headerName, responseHeaders[headerName])
-      })
-    }
-    return payload
-  })
-}
-
-await app.listen({ port: PORT, host: HOST })
+console.info(`API server listening on /ip4/${HOST}/tcp/${RPC_PORT}`) // eslint-disable-line no-console
+console.info(`Gateway (readonly) server listening on /ip4/${HOST}/tcp/${HTTP_PORT}`) // eslint-disable-line no-console
 
 const stopWebServer = async (): Promise<void> => {
   try {
-    await app.close()
+    await rpcApiServer.close()
+    await httpGatewayServer.close()
   } catch (error) {
     log.error(error)
     process.exit(1)
@@ -258,9 +218,11 @@ async function closeGracefully (signal: number | string): Promise<void> {
   }
   shutdownRequested = true
 
-  await Promise.all([heliaServer.stop().then(() => {
-    log('Stopped Helia.')
-  }), stopWebServer()])
+  await stopWebServer()
+  await fetch.stop()
+  await helia.stop()
+
+  log('Stopped Helia.')
 
   process.kill(process.pid, signal)
 }
@@ -281,3 +243,79 @@ const uncaughtHandler = (error: any): void => {
 
 process.on('uncaughtException', uncaughtHandler)
 process.on('unhandledRejection', uncaughtHandler)
+
+interface ServerOptions {
+  metrics: boolean
+}
+
+async function createServer (name: string, routes: RouteOptions[], options: ServerOptions): Promise<FastifyInstance> {
+  const app = fastify({
+    logger: {
+      enabled: FASTIFY_DEBUG !== '',
+      msgPrefix: `helia-http-gateway:fastify:${name} `,
+      level: 'info',
+      transport: {
+        target: 'pino-pretty'
+      }
+    }
+  })
+
+  if (options.metrics) {
+    // Add the prometheus middleware
+    await app.register(metricsPlugin.default, { endpoint: '/metrics' })
+  }
+
+  await app.register(cors, {
+    /**
+     * @see https://github.com/ipfs/gateway-conformance/issues/186
+     * @see https://github.com/ipfs/gateway-conformance/blob/d855ec4fb9dac4a5aaecf3776037b005cc74c566/tests/path_gateway_cors_test.go#L16-L56
+     */
+    allowedHeaders: ['Content-Type', 'Range', 'User-Agent', 'X-Requested-With'],
+    origin: '*',
+    exposedHeaders: [
+      'Content-Range',
+      'Content-Length',
+      'X-Ipfs-Path',
+      'X-Ipfs-Roots',
+      'X-Chunked-Output',
+      'X-Stream-Output'
+    ],
+    methods: ['GET', 'HEAD', 'OPTIONS'],
+    strictPreflight: false,
+    preflightContinue: true
+  })
+
+  // enable compression
+  await app.register(compress, {
+    global: true
+  })
+
+  // set up routes
+  routes.forEach(route => {
+    app.route(route)
+  })
+
+  if ([ECHO_HEADERS].includes(true)) {
+    app.addHook('onRequest', async (request, reply) => {
+      if (ECHO_HEADERS) {
+        log('fastify hook onRequest: echoing headers:')
+        Object.keys(request.headers).forEach((headerName) => {
+          log('\t %s: %s', headerName, request.headers[headerName])
+        })
+      }
+    })
+
+    app.addHook('onSend', async (request, reply, payload) => {
+      if (ECHO_HEADERS) {
+        log('fastify hook onSend: echoing headers:')
+        const responseHeaders = reply.getHeaders()
+        Object.keys(responseHeaders).forEach((headerName) => {
+          log('\t %s: %s', headerName, responseHeaders[headerName])
+        })
+      }
+      return payload
+    })
+  }
+
+  return app
+}

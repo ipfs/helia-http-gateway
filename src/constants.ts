@@ -1,4 +1,12 @@
-export const PORT = Number(process.env.PORT ?? 8080)
+/**
+ * Where we listen for gateway requests
+ */
+export const HTTP_PORT = Number(process.env.HTTP_PORT ?? 8080)
+
+/**
+ * Where we listen for RPC API requests
+ */
+export const RPC_PORT = Number(process.env.RPC_PORT ?? 5001)
 
 export const HOST = process.env.HOST ?? '0.0.0.0'
 
