@@ -29,3 +29,10 @@ debugging/test-gateways.log
 permutation-logs
 *.csv
 *.log
+
+# grafana/prometheus files
+config/grafana/alerting
+config/grafana/grafana.db
+.DS_Store
+*.log
+.env*
