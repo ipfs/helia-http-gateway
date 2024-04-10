@@ -1,3 +1,4 @@
+import { GC_TIMEOUT_MS, HEALTHCHECK_TIMEOUT_MS } from './constants.js'
 import { getRequestAwareSignal } from './helia-server.js'
 import type { VerifiedFetch } from '@helia/verified-fetch'
 import type { ComponentLogger } from '@libp2p/interface'
@@ -5,8 +6,6 @@ import type { FastifyReply, FastifyRequest, RouteOptions } from 'fastify'
 import type { Helia } from 'helia'
 
 const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.com/repos/ipfs/helia/git/ref/tags/helia-v${version}`
-const GC_TIMEOUT_MS = 20000
-const HEALTHCHECK_TIMEOUT_MS = 1000
 
 export interface HeliaRPCAPIOptions {
   logger: ComponentLogger

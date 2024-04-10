@@ -65,6 +65,16 @@ export const USE_DELEGATED_ROUTING = process.env.USE_DELEGATED_ROUTING !== 'fals
 export const DELEGATED_ROUTING_V1_HOST = process.env.DELEGATED_ROUTING_V1_HOST ?? 'https://delegated-ipfs.dev'
 
 /**
+ * How long to wait for GC to complete
+ */
+export const GC_TIMEOUT_MS = 20000
+
+/**
+ * How long to wait for the healthcheck retrieval of an identity CID to complete
+ */
+export const HEALTHCHECK_TIMEOUT_MS = 1000
+
+/**
  * You can set `RECOVERABLE_ERRORS` to a comma delimited list of errors to recover from.
  * If you want to recover from all errors, set `RECOVERABLE_ERRORS` to 'all'.
  * If you want to recover from no errors, set `RECOVERABLE_ERRORS` to ''.
