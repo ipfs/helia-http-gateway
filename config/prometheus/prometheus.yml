@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 5s  # How frequently to scrape targets by default.
+  evaluation_interval: 15s  # How frequently to evaluate rules.
+
+scrape_configs:
+  - job_name: 'helia-http-gateway'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+
+rule_files:
+  - "rules/*.yml"  # This line tells Prometheus where to find the rule files.

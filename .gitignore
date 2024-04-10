@@ -32,3 +32,10 @@ permutation-logs
 blockstore
 datastore
 *.heapsnapshot
+
+# grafana/prometheus files
+config/grafana/alerting
+config/grafana/grafana.db
+.DS_Store
+*.log
+.env*
