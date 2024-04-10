@@ -100,7 +100,7 @@
     "@multiformats/multiaddr": "^12.2.1",
     "@sgtpooki/file-type": "^1.0.1",
     "blockstore-fs": "^1.1.10",
-    "datastore-level": "^10.1.7",
+    "datastore-level": "^10.1.8",
     "fastify": "^4.26.2",
     "fastify-metrics": "^11.0.0",
     "helia": "^4.1.0",
