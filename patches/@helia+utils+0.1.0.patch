@@ -1,0 +1,24 @@
+diff --git a/node_modules/@helia/utils/dist/src/utils/networked-storage.js b/node_modules/@helia/utils/dist/src/utils/networked-storage.js
+index 54653cb..973633b 100644
+--- a/node_modules/@helia/utils/dist/src/utils/networked-storage.js
++++ b/node_modules/@helia/utils/dist/src/utils/networked-storage.js
+@@ -1,7 +1,6 @@
+ import { CodeError, start, stop } from '@libp2p/interface';
+ import { anySignal } from 'any-signal';
+ import { IdentityBlockstore } from 'blockstore-core/identity';
+-import { TieredBlockstore } from 'blockstore-core/tiered';
+ import filter from 'it-filter';
+ import forEach from 'it-foreach';
+ import { CustomProgressEvent } from 'progress-events';
+@@ -28,10 +27,7 @@ export class NetworkedStorage {
+      */
+     constructor(components) {
+         this.log = components.logger.forComponent('helia:networked-storage');
+-        this.child = new TieredBlockstore([
+-            new IdentityBlockstore(),
+-            components.blockstore
+-        ]);
++        this.child = new IdentityBlockstore(components.blockstore);
+         this.blockRetrievers = (components.blockBrokers ?? []).filter(isBlockRetriever);
+         this.blockAnnouncers = (components.blockBrokers ?? []).filter(isBlockAnnouncer);
+         this.hashers = components.hashers ?? {};
