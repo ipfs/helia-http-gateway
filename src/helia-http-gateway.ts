@@ -87,7 +87,10 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
       url
     })
 
-    const resp = await opts.fetch(url, { signal, redirect: 'manual' })
+    // if subdomains are disabled, have @helia/verified-fetch follow redirects
+    // internally, otherwise let the client making the request do it
+    const resp = await opts.fetch(url, { signal, redirect: USE_SUBDOMAINS ? 'manual' : 'follow' })
+
     await convertVerifiedFetchResponseToFastifyReply(resp, reply)
   }
 
