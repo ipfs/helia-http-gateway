@@ -68,7 +68,7 @@ start_gateway() {
   fi
   echo "starting gateway..."
   # npx clinic doctor --open=false -- node dist/src/index.js &
-  (node --trace-warnings dist/src/index.js) &
+  (node --trace-warnings --inspect dist/src/index.js) &
   process_id=$!
   # echo "process id: $!"
   npx wait-on "tcp:$HTTP_PORT" -t 10000 || {
