@@ -35,9 +35,9 @@ USE_SUBDOMAINS=true USE_REDIRECTS=false docker build . --platform linux/$(arch) 
 Then we need to start the container
 
 ```sh
-docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:local-$(arch)
+docker run -it -p 5001:5001 -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:local-$(arch)
 # or
-docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" -e USE_REDIRECTS="false" -e USE_SUBDOMAINS="true" helia-http-gateway:local-$(arch)
+docker run -it -p 5001:5001 -p 8080:8080 -e DEBUG="helia-http-gateway*" -e USE_REDIRECTS="false" -e USE_SUBDOMAINS="true" helia-http-gateway:local-$(arch)
 ```
 
 ## Running tests against the container

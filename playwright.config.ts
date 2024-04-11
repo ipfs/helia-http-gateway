@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
-import { PORT } from './src/constants.js'
+import { HTTP_PORT } from './src/constants.js'
 
 /**
  * Run one of the variants of `npm run start` by setting the PLAYWRIGHT_START_CMD_MOD environment variable.
@@ -60,7 +60,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: `npm run build && npm run start${PLAYWRIGHT_START_CMD_MOD}`,
-    port: PORT,
+    port: HTTP_PORT,
     // Tiros does not re-use the existing server.
     reuseExistingServer: process.env.CI == null,
     env: {

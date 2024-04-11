@@ -114,25 +114,25 @@ Note that any of the following calls to docker can be replaced with something li
 #### Disable libp2p
 
 ```sh
-$ docker run -it -p $PORT:8080 -e DEBUG="helia-http-gateway*" -e USE_LIBP2P="false" helia
+$ docker run -it -p $RPC_PORT:5001 -p $HTTP_PORT:8080 -e DEBUG="helia-http-gateway*" -e USE_LIBP2P="false" helia
 ```
 
 #### Disable bitswap
 
 ```sh
-$ docker run -it -p $PORT:8080 -e DEBUG="helia-http-gateway*" -e USE_BITSWAP="false" helia
+$ docker run -it -p $RPC_PORT:5001 -p $HTTP_PORT:8080 -e DEBUG="helia-http-gateway*" -e USE_BITSWAP="false" helia
 ```
 
 #### Disable trustless gateways
 
 ```sh
-$ docker run -it -p $PORT:8080 -e DEBUG="helia-http-gateway*" -e USE_TRUSTLESS_GATEWAYS="false" helia
+$ docker run -it -p $RPC_PORT:5001 -p $HTTP_PORT:8080 -e DEBUG="helia-http-gateway*" -e USE_TRUSTLESS_GATEWAYS="false" helia
 ```
 
 #### Customize trustless gateways
 
 ```sh
-$ docker run -it -p $PORT:8080 -e DEBUG="helia-http-gateway*" -e TRUSTLESS_GATEWAYS="https://ipfs.io,https://dweb.link" helia
+$ docker run -it -p $RPC_PORT:5001 -p $HTTP_PORT:8080 -e DEBUG="helia-http-gateway*" -e TRUSTLESS_GATEWAYS="https://ipfs.io,https://dweb.link" helia
 ```
 
 <!--
@@ -141,9 +141,9 @@ $ docker run -it -p $PORT:8080 -e DEBUG="helia-http-gateway*" -e TRUSTLESS_GATEW
 **NOTE:** Not currently supported due to docker volume? issues.
 
 ```sh
-$ docker run -it -p $PORT:8080 -e DEBUG="helia-http-gateway*" -e FILE_DATASTORE_PATH="./datastore" -e FILE_BLOCKSTORE_PATH="./blockstore" helia
+$ docker run -it -p $RPC_PORT:5001 -p $HTTP_PORT:8080 -e DEBUG="helia-http-gateway*" -e FILE_DATASTORE_PATH="./datastore" -e FILE_BLOCKSTORE_PATH="./blockstore" helia
 # and if you want to re-use a volume from your host:
-$ docker run -it -p $PORT:8080 -e DEBUG="helia-http-gateway*" -e FILE_DATASTORE_PATH="./datastore" -e FILE_BLOCKSTORE_PATH="./blockstore" -v ./datastore:/datastore -v ./blockstore:/blockstore helia
+$ docker run -it -p $RPC_PORT:5001 -p $HTTP_PORT:8080 -e DEBUG="helia-http-gateway*" -e FILE_DATASTORE_PATH="./datastore" -e FILE_BLOCKSTORE_PATH="./blockstore" -v ./datastore:/datastore -v ./blockstore:/blockstore helia
 ```
 -->
 

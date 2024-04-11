@@ -8,7 +8,8 @@ fi
 
 # You have to pass `DEBUG=" " to disable debugging when using this script`
 export DEBUG=${DEBUG:-"helia-http-gateway,helia-http-gateway:server,helia-http-gateway:*:helia-fetch"}
-export PORT=${PORT:-8080}
+export HTTP_PORT=${HTTP_PORT:-8080}
+export RPC_PORT=${RPC_PORT:-5001}
 EXIT_CODE=0
 
 cleanup_until_death_called=false
@@ -20,12 +21,11 @@ cleanup_until_death() {
   echo "cleanup_until_death called"
   cleanup_until_death_called=true
   if [ "$gateway_already_running" != true ]; then
-    lsof -i TCP:$PORT | grep LISTEN | awk '{print $2}' | xargs --no-run-if-empty kill -9
+    lsof -i TCP:$HTTP_PORT | grep LISTEN | awk '{print $2}' | xargs --no-run-if-empty kill -9
 
     echo "waiting for the gateway to exit"
-    npx wait-on "tcp:$PORT" -t 10000 -r # wait for the port to be released
+    npx wait-on "tcp:$HTTP_PORT" -t 10000 -r # wait for the port to be released
   fi
-
 
   exit $EXIT_CODE
 }
@@ -35,7 +35,8 @@ trap cleanup_until_death EXIT
 # Before starting, output all env vars that helia-http-gateway uses
 echo "DEBUG=$DEBUG"
 echo "FASTIFY_DEBUG=$FASTIFY_DEBUG"
-echo "PORT=$PORT"
+echo "HTTP_PORT=$HTTP_PORT"
+echo "RPC_PORT=$RPC_PORT"
 echo "HOST=$HOST"
 echo "USE_SUBDOMAINS=$USE_SUBDOMAINS"
 echo "METRICS=$METRICS"
@@ -51,7 +52,7 @@ echo "FILE_BLOCKSTORE_PATH=$FILE_BLOCKSTORE_PATH"
 echo "ALLOW_UNHANDLED_ERROR_RECOVERY=$ALLOW_UNHANDLED_ERROR_RECOVERY"
 
 gateway_already_running=false
-if nc -z localhost $PORT; then
+if nc -z localhost $HTTP_PORT; then
   echo "gateway is already running"
   gateway_already_running=true
 fi
@@ -70,7 +71,7 @@ start_gateway() {
   (node --trace-warnings dist/src/index.js) &
   process_id=$!
   # echo "process id: $!"
-  npx wait-on "tcp:$PORT" -t 10000 || {
+  npx wait-on "tcp:$HTTP_PORT" -t 10000 || {
     EXIT_CODE=1
     cleanup_until_death
   }
@@ -78,7 +79,7 @@ start_gateway() {
 start_gateway
 
 ensure_gateway_running() {
-  npx wait-on "tcp:$PORT" -t 5000 || {
+  npx wait-on "tcp:$HTTP_PORT" -t 5000 || {
     EXIT_CODE=1
     cleanup_until_death
   }

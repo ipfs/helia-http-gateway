@@ -29,6 +29,9 @@ debugging/test-gateways.log
 permutation-logs
 *.csv
 *.log
+blockstore
+datastore
+*.heapsnapshot
 
 # grafana/prometheus files
 config/grafana/alerting

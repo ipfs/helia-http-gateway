@@ -15,7 +15,8 @@
 # export DEBUG="helia*,helia*:trace,libp2p*,libp2p*:trace"
 export DEBUG="*,*:trace"
 unset FASTIFY_DEBUG
-export PORT=8080
+export HTTP_PORT=8080
+export RPC_PORT=5001
 export HOST="0.0.0.0"
 export ECHO_HEADERS=false
 export METRICS=true
@@ -47,7 +48,7 @@ echo "USE_SUBDOMAINS,USE_BITSWAP,USE_TRUSTLESS_GATEWAYS,USE_LIBP2P,USE_DELEGATED
 
 run_test() {
 
-  npx wait-on "tcp:$PORT" -t 10000 -r # wait for the port to be released
+  npx wait-on "tcp:$HTTP_PORT" -t 10000 -r # wait for the port to be released
 
   config_id="USE_SUBDOMAINS=$USE_SUBDOMAINS,USE_BITSWAP=$USE_BITSWAP,USE_TRUSTLESS_GATEWAYS=$USE_TRUSTLESS_GATEWAYS,USE_LIBP2P=$USE_LIBP2P,USE_DELEGATED_ROUTING=$USE_DELEGATED_ROUTING"
   # if we cannot get any data, we should skip this run.. we need at least USE_BITSWAP enabled, plus either USE_LIBP2P or USE_DELEGATED_ROUTING
@@ -133,7 +134,7 @@ cleanup_permutations() {
   echo "sent TERM signal to subshell"
   wait $subshell_pid # wait for the process to exit
 
-  npx wait-on "tcp:$PORT" -t 10000 -r # wait for the port to be released
+  npx wait-on "tcp:$HTTP_PORT" -t 10000 -r # wait for the port to be released
 
   exit 1
 }

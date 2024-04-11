@@ -1,4 +1,12 @@
-export const PORT = Number(process.env.PORT ?? 8080)
+/**
+ * Where we listen for gateway requests
+ */
+export const HTTP_PORT = Number(process.env.HTTP_PORT ?? 8080)
+
+/**
+ * Where we listen for RPC API requests
+ */
+export const RPC_PORT = Number(process.env.RPC_PORT ?? 5001)
 
 export const HOST = process.env.HOST ?? '0.0.0.0'
 
@@ -55,6 +63,16 @@ export const USE_DELEGATED_ROUTING = process.env.USE_DELEGATED_ROUTING !== 'fals
  * If not set, we will default delegated routing to `https://delegated-ipfs.dev`
  */
 export const DELEGATED_ROUTING_V1_HOST = process.env.DELEGATED_ROUTING_V1_HOST ?? 'https://delegated-ipfs.dev'
+
+/**
+ * How long to wait for GC to complete
+ */
+export const GC_TIMEOUT_MS = 20000
+
+/**
+ * How long to wait for the healthcheck retrieval of an identity CID to complete
+ */
+export const HEALTHCHECK_TIMEOUT_MS = 1000
 
 /**
  * You can set `RECOVERABLE_ERRORS` to a comma delimited list of errors to recover from.

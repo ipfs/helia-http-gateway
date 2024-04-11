@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { PORT } from '../src/constants.js'
+import { RPC_PORT } from '../src/constants.js'
 
 function validateResponse (content: string): void {
   expect(() => JSON.parse(content)).not.toThrow()
@@ -10,7 +10,7 @@ function validateResponse (content: string): void {
 }
 
 test('GET /api/v0/version', async ({ page }) => {
-  const result = await page.goto(`http://localhost:${PORT}/api/v0/version`)
+  const result = await page.goto(`http://localhost:${RPC_PORT}/api/v0/version`)
   expect(result?.status()).toBe(200)
 
   const maybeContent = await result?.text()
@@ -19,7 +19,7 @@ test('GET /api/v0/version', async ({ page }) => {
 })
 
 test('POST /api/v0/version', async ({ page }) => {
-  const result = await page.request.post(`http://localhost:${PORT}/api/v0/version`)
+  const result = await page.request.post(`http://localhost:${RPC_PORT}/api/v0/version`)
   expect(result?.status()).toBe(200)
 
   const maybeContent = await result?.text()

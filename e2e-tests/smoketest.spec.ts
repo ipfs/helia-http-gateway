@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { PORT } from '../src/constants.js'
+import { HTTP_PORT } from '../src/constants.js'
 
 // test all the same pages listed at https://probelab.io/websites/
 const pages = [
@@ -36,7 +36,7 @@ test.beforeEach(async ({ context }) => {
 })
 
 pages.forEach((pagePath) => {
-  const url = `http://${pagePath}.ipns.localhost:${PORT}`
+  const url = `http://${pagePath}.ipns.localhost:${HTTP_PORT}`
   test(`helia-http-gateway can load path '${url}'`, async ({ page }) => {
     // only wait for 'commit' because we don't want to wait for all the assets to load, we just want to make sure that they *would* load (e.g. the html is valid)
     const heliaGatewayResponse = await page.goto(`${url}`, { waitUntil: 'commit' })
