@@ -1,6 +1,5 @@
 datasources:
   - name: prometheus
-    uid: fdh27hlcicjk0e
     orgId: 1
     type: prometheus
     typeName: Prometheus
