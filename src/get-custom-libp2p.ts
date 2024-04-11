@@ -15,7 +15,7 @@ import { ipnsSelector } from 'ipns/selector'
 import { ipnsValidator } from 'ipns/validator'
 import { createLibp2p as create, type Libp2pOptions, type ServiceFactoryMap } from 'libp2p'
 import isPrivate from 'private-ip'
-import { DELEGATED_ROUTING_V1_HOST, METRICS, USE_DELEGATED_ROUTING } from './constants.js'
+import { DELEGATED_ROUTING_V1_HOST, METRICS, USE_DELEGATED_ROUTING, USE_DHT_ROUTING } from './constants.js'
 import type { Libp2p, ServiceMap } from '@libp2p/interface'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { HeliaInit } from 'helia'
@@ -35,8 +35,15 @@ const IP6 = 41
 
 export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions): Promise<Libp2p<HeliaGatewayLibp2pServices>> {
   const libp2pServices: ServiceFactoryMap = {
-    identify: identify(),
-    dht: kadDHT({
+    identify: identify()
+  }
+
+  if (USE_DELEGATED_ROUTING) {
+    libp2pServices.delegatedRouting = () => createDelegatedRoutingV1HttpApiClient(DELEGATED_ROUTING_V1_HOST)
+  }
+
+  if (USE_DHT_ROUTING) {
+    libp2pServices.dht = kadDHT({
       protocol: '/ipfs/kad/1.0.0',
       peerInfoMapper: removePrivateAddressesMapper,
       // don't do DHT server work.
@@ -48,10 +55,6 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
         ipns: ipnsSelector
       }
     })
-  }
-
-  if (USE_DELEGATED_ROUTING) {
-    libp2pServices.delegatedRouting = () => createDelegatedRoutingV1HttpApiClient(DELEGATED_ROUTING_V1_HOST)
   }
 
   const options: Libp2pOptions<HeliaGatewayLibp2pServices> = {
