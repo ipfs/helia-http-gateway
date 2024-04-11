@@ -36,6 +36,12 @@ EXPOSE 8080
 
 HEALTHCHECK --interval=12s --timeout=12s --start-period=10s CMD node dist/src/healthcheck.js
 
+# use level datastore by default
+ENV FILE_DATASTORE_PATH=/data/ipfs/datastore
+
+# use filesystem blockstore by default
+ENV FILE_BLOCKSTORE_PATH=/data/ipfs/blockstore
+
 # Use tini to handle signals properly, see https://github.com/nodejs/docker-node/blob/main/docs/BestPractices.md#handling-kernel-signals
 ENTRYPOINT ["/usr/bin/tini", "-p", "SIGKILL", "--"]
 
