@@ -12,7 +12,7 @@ From inside this directory, you can run the following command to start up a graf
 docker compose -f docker-compose.yml up -d
 ```
 
-Then visit <http://localhost:3000/d/helia-http-gateway-default/helia-http-gateway-default-dashboard?orgId=1&refresh=5s> and login with the default credentials (admin:admin). The prometheus datasource and the dashboard should be automatically set up.
+Then visit <http://localhost:9191/d/helia-http-gateway-default/helia-http-gateway-default-dashboard?orgId=1&refresh=5s> and login with the default credentials (admin:admin). The prometheus datasource and the dashboard should be automatically set up.
 
 If you want to generate some metrics quickly, you can run `npm run debug:until-death` and you should start seeing metrics in the dashboard for the results of querying the gateway for the websites listed by <https://probelab.io/websites/>
 
