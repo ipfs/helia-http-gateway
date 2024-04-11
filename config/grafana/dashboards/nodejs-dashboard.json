@@ -1,4 +1,41 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.4.1"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -20,13 +57,12 @@
   "fiscalYearStartMonth": 0,
   "gnetId": 11956,
   "graphTooltip": 0,
-  "id": 4,
+  "id": null,
   "links": [],
   "panels": [
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -91,8 +127,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "nodejs_version_info{service=~\"$service\", stack=~\"$stack\"}",
           "legendFormat": "{{version}}",
@@ -104,8 +139,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -187,8 +221,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "nodejs_active_requests{service=~\"$service\", stack=~\"$stack\"}",
           "interval": "$interval",
@@ -197,8 +230,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "nodejs_active_requests_total{service=~\"$service\", stack=~\"$stack\"}",
           "interval": "$interval",
@@ -211,8 +243,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -297,8 +328,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "nodejs_active_handles{service=~\"$service\", stack=~\"$stack\"}",
           "interval": "$interval",
@@ -307,8 +337,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "editorMode": "code",
           "expr": "rate(nodejs_active_handles_total{service=~\"$service\", stack=~\"$stack\"}[$__rate_interval])",
@@ -324,8 +353,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -390,8 +418,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "process_heap_bytes{stack=~\"$stack\",service=~\"$service\"}",
           "refId": "A"
@@ -402,8 +429,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -468,8 +494,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "(process_start_time_seconds{service=~\"$service\", stack=~\"$stack\"})*1000",
           "legendFormat": "{{service}}",
@@ -481,8 +506,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -547,8 +571,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "process_max_fds{stack=~\"$stack\",service=~\"$service\"}",
           "refId": "A"
@@ -559,8 +582,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -625,8 +647,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "scrape_duration_seconds{stack=~\"$stack\",service=~\"$service\", host=~\"$host\"}",
           "refId": "A"
@@ -637,8 +658,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -703,8 +723,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "process_open_fds{stack=~\"$stack\",service=~\"$service\"}",
           "refId": "A"
@@ -715,8 +734,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -800,8 +818,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "rate(process_cpu_user_seconds_total{service=~\"$service\", stack=~\"$stack\"}[$interval])",
           "interval": "$interval",
@@ -810,8 +827,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "rate(process_cpu_system_seconds_total{service=~\"$service\", stack=~\"$stack\"}[$interval])",
           "interval": "$interval",
@@ -820,8 +836,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "rate(process_cpu_seconds_total{service=\"$service\", stack=~\"$stack\"}[$interval])",
           "legendFormat": "{{service}} Total",
@@ -833,8 +848,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -918,8 +932,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "nodejs_eventloop_lag_seconds{service=~\"$service\", stack=~\"$stack\"}",
           "interval": "$interval",
@@ -933,8 +946,7 @@
     {
       "collapsed": false,
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "gridPos": {
         "h": 1,
@@ -947,8 +959,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "refId": "A"
         }
@@ -958,8 +969,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -1043,8 +1053,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "nodejs_external_memory_bytes{service=~\"$service\", stack=~\"$stack\"}",
           "interval": "$interval",
@@ -1057,8 +1066,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -1142,8 +1150,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "nodejs_heap_size_total_bytes{service=~\"$service\", stack=~\"$stack\"}",
           "interval": "$interval",
@@ -1152,8 +1159,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "nodejs_heap_size_used_bytes{service=~\"$service\", stack=~\"$stack\"}",
           "interval": "$interval",
@@ -1166,8 +1172,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -1251,8 +1256,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "process_resident_memory_bytes{service=~\"$service\", stack=~\"$stack\"}",
           "interval": "$interval",
@@ -1261,8 +1265,7 @@
         },
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "process_virtual_memory_bytes{service=~\"$service\", stack=~\"$stack\"}",
           "interval": "$interval",
@@ -1276,8 +1279,7 @@
     {
       "collapsed": false,
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "gridPos": {
         "h": 1,
@@ -1290,8 +1292,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "refId": "A"
         }
@@ -1301,8 +1302,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -1386,8 +1386,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "nodejs_heap_space_size_total_bytes{service=~\"$service\", stack=~\"$stack\"}",
           "interval": "$interval",
@@ -1400,8 +1399,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -1485,8 +1483,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "nodejs_heap_space_size_available_bytes{service=~\"$service\", stack=~\"$stack\"}",
           "interval": "$interval",
@@ -1499,8 +1496,7 @@
     },
     {
       "datasource": {
-        "type": "prometheus",
-        "uid": "P1809F7CD0C75ACF3"
+        "type": "prometheus"
       },
       "fieldConfig": {
         "defaults": {
@@ -1584,8 +1580,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
+            "type": "prometheus"
           },
           "expr": "nodejs_heap_space_size_used_bytes{service=~\"$service\", stack=~\"$stack\"}",
           "interval": "$interval",
@@ -1597,7 +1592,7 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "auto",
+  "refresh": "5s",
   "schemaVersion": 39,
   "tags": [],
   "templating": {
@@ -1607,7 +1602,7 @@
         "auto_count": 30,
         "auto_min": "10s",
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "30s",
           "value": "30s"
         },
@@ -1693,15 +1688,9 @@
         "type": "interval"
       },
       {
-        "current": {
-          "isNone": true,
-          "selected": true,
-          "text": "None",
-          "value": ""
-        },
+        "current": {},
         "datasource": {
-          "type": "prometheus",
-          "uid": "P1809F7CD0C75ACF3"
+          "type": "prometheus"
         },
         "definition": "label_values(nodejs_active_handles, group)",
         "hide": 0,
@@ -1721,15 +1710,9 @@
         "useTags": false
       },
       {
-        "current": {
-          "isNone": true,
-          "selected": true,
-          "text": "None",
-          "value": ""
-        },
+        "current": {},
         "datasource": {
-          "type": "prometheus",
-          "uid": "P1809F7CD0C75ACF3"
+          "type": "prometheus"
         },
         "definition": "label_values(nodejs_active_handles{group=\"$group\"},stack)",
         "hide": 0,
@@ -1750,18 +1733,9 @@
       },
       {
         "allValue": "",
-        "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
+        "current": {},
         "datasource": {
-          "type": "prometheus",
-          "uid": "P1809F7CD0C75ACF3"
+          "type": "prometheus"
         },
         "definition": "label_values(nodejs_active_handles,service)",
         "hide": 0,
@@ -1782,14 +1756,9 @@
       },
       {
         "allValue": "",
-        "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
-        },
+        "current": {},
         "datasource": {
-          "type": "prometheus",
-          "uid": "P1809F7CD0C75ACF3"
+          "type": "prometheus"
         },
         "definition": "label_values(nodejs_active_handles{stack=\"$stack\",service=\"$service\"},host)",
         "hide": 2,
@@ -1830,7 +1799,7 @@
   },
   "timezone": "",
   "title": "Nodejs Metrics",
-  "uid": "zvsXmKEWk",
+  "uid": "helia-http-gateway-nodejs",
   "version": 1,
   "weekStart": ""
 }
