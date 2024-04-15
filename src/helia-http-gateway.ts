@@ -100,19 +100,19 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
 
   async function convertVerifiedFetchResponseToFastifyReply (url: string, verifiedFetchResponse: Response, reply: FastifyReply, options: AbortOptions): Promise<void> {
     if (!verifiedFetchResponse.ok) {
-      log('verified-fetch response not ok: ', verifiedFetchResponse.status)
+      log('verified-fetch response for %s not ok: ', url, verifiedFetchResponse.status)
       await reply.code(verifiedFetchResponse.status).send(verifiedFetchResponse.statusText)
       return
     }
     const contentType = verifiedFetchResponse.headers.get('content-type')
     if (contentType == null) {
-      log('verified-fetch response has no content-type')
+      log('verified-fetch response for %s has no content-type', url)
       await reply.code(200).send(verifiedFetchResponse.body)
       return
     }
     if (verifiedFetchResponse.body == null) {
       // this should never happen
-      log('verified-fetch response has no body')
+      log('verified-fetch response for %s has no body', url)
       await reply.code(501).send('empty')
       return
     }
@@ -137,6 +137,7 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
       log.error('error reading response for %s', url, err)
       await reader.cancel(err)
     } finally {
+      log.error('reading response for %s ended', url)
       reply.raw.end()
     }
   }
