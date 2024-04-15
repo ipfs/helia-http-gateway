@@ -1,9 +1,11 @@
+import { raceSignal } from 'race-signal'
 import { USE_SUBDOMAINS } from './constants.js'
 import { dnsLinkLabelEncoder, isInlinedDnsLink } from './dns-link-labels.js'
 import { getFullUrlFromFastifyRequest, getRequestAwareSignal } from './helia-server.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
 import type { VerifiedFetch } from '@helia/verified-fetch'
 import type { ComponentLogger } from '@libp2p/interface'
+import type { AbortOptions } from '@multiformats/multiaddr'
 import type { FastifyReply, FastifyRequest, RouteOptions } from 'fastify'
 import type { Helia } from 'helia'
 
@@ -91,10 +93,12 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
     // internally, otherwise let the client making the request do it
     const resp = await opts.fetch(url, { signal, redirect: USE_SUBDOMAINS ? 'manual' : 'follow' })
 
-    await convertVerifiedFetchResponseToFastifyReply(resp, reply)
+    await convertVerifiedFetchResponseToFastifyReply(url, resp, reply, {
+      signal
+    })
   }
 
-  async function convertVerifiedFetchResponseToFastifyReply (verifiedFetchResponse: Response, reply: FastifyReply): Promise<void> {
+  async function convertVerifiedFetchResponseToFastifyReply (url: string, verifiedFetchResponse: Response, reply: FastifyReply, options: AbortOptions): Promise<void> {
     if (!verifiedFetchResponse.ok) {
       log('verified-fetch response not ok: ', verifiedFetchResponse.status)
       await reply.code(verifiedFetchResponse.status).send(verifiedFetchResponse.statusText)
@@ -123,14 +127,15 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
     try {
       let done = false
       while (!done) {
-        const { done: _done, value } = await reader.read()
+        const { done: _done, value } = await raceSignal(reader.read(), options.signal)
         if (value != null) {
           reply.raw.write(Buffer.from(value))
         }
         done = _done
       }
     } catch (err) {
-      log.error('error reading response:', err)
+      log.error('error reading response for %s', url, err)
+      await reader.cancel(err)
     } finally {
       reply.raw.end()
     }
