@@ -10,6 +10,8 @@ fi
 export DEBUG=${DEBUG:-"helia-http-gateway,helia-http-gateway:server,helia-http-gateway:*:helia-fetch"}
 export HTTP_PORT=${HTTP_PORT:-8080}
 export RPC_PORT=${RPC_PORT:-5001}
+export FILE_DATASTORE_PATH=datastore
+export FILE_BLOCKSTORE_PATH=blockstore
 EXIT_CODE=0
 
 cleanup_until_death_called=false
