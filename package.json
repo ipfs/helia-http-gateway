@@ -78,7 +78,7 @@
     "@fastify/compress": "^7.0.3",
     "@fastify/cors": "^9.0.1",
     "@helia/block-brokers": "^2.0.3",
-    "@helia/delegated-routing-v1-http-api-client": "^3.0.0",
+    "@helia/delegated-routing-v1-http-api-client": "^3.0.1",
     "@helia/http": "^1.0.3",
     "@helia/interface": "^4.1.0",
     "@helia/routers": "^1.0.2",
