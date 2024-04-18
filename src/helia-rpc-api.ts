@@ -1,20 +1,18 @@
 import { GC_TIMEOUT_MS, HEALTHCHECK_TIMEOUT_MS } from './constants.js'
 import { getRequestAwareSignal } from './helia-server.js'
 import type { VerifiedFetch } from '@helia/verified-fetch'
-import type { ComponentLogger } from '@libp2p/interface'
 import type { FastifyReply, FastifyRequest, RouteOptions } from 'fastify'
 import type { Helia } from 'helia'
 
 const HELIA_RELEASE_INFO_API = (version: string): string => `https://api.github.com/repos/ipfs/helia/git/ref/tags/helia-v${version}`
 
 export interface HeliaRPCAPIOptions {
-  logger: ComponentLogger
   helia: Helia
   fetch: VerifiedFetch
 }
 
 export function rpcApi (opts: HeliaRPCAPIOptions): RouteOptions[] {
-  const log = opts.logger.forComponent('rpc-api')
+  const log = opts.helia.logger.forComponent('rpc-api')
   let heliaVersionInfo: { Version: string, Commit: string } | undefined
 
   /**

@@ -3,7 +3,6 @@ import { dnsLinkLabelEncoder, isInlinedDnsLink } from './dns-link-labels.js'
 import { getFullUrlFromFastifyRequest, getRequestAwareSignal } from './helia-server.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
 import type { VerifiedFetch } from '@helia/verified-fetch'
-import type { ComponentLogger } from '@libp2p/interface'
 import type { FastifyReply, FastifyRequest, RouteOptions } from 'fastify'
 import type { Helia } from 'helia'
 
@@ -14,13 +13,12 @@ interface EntryParams {
 }
 
 export interface HeliaHTTPGatewayOptions {
-  logger: ComponentLogger
   helia: Helia
   fetch: VerifiedFetch
 }
 
 export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
-  const log = opts.logger.forComponent('http-gateway')
+  const log = opts.helia.logger.forComponent('http-gateway')
 
   /**
    * Redirects to the subdomain gateway.
