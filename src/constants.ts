@@ -80,28 +80,3 @@ export const GC_TIMEOUT_MS = 20000
  * How long to wait for the healthcheck retrieval of an identity CID to complete
  */
 export const HEALTHCHECK_TIMEOUT_MS = 1000
-
-/**
- * You can set `RECOVERABLE_ERRORS` to a comma delimited list of errors to recover from.
- * If you want to recover from all errors, set `RECOVERABLE_ERRORS` to 'all'.
- * If you want to recover from no errors, set `RECOVERABLE_ERRORS` to ''.
- */
-export const RECOVERABLE_ERRORS = (() => {
-  if (process.env.RECOVERABLE_ERRORS === 'all') {
-    return 'all'
-  }
-  if (process.env.RECOVERABLE_ERRORS === '') {
-    return ''
-  }
-  return process.env.RECOVERABLE_ERRORS?.split(',') ?? 'all'
-})()
-
-export const ALLOW_UNHANDLED_ERROR_RECOVERY = (() => {
-  if (RECOVERABLE_ERRORS === 'all') {
-    return true
-  }
-  if (RECOVERABLE_ERRORS === '') {
-    return false
-  }
-  return RECOVERABLE_ERRORS.length > 0
-})()
