@@ -103,7 +103,7 @@
     "datastore-level": "^10.1.7",
     "fastify": "^4.26.2",
     "fastify-metrics": "^11.0.0",
-    "helia": "^4.1.0",
+    "helia": "^4.2.4",
     "ipns": "^9.1.0",
     "libp2p": "^1.3.1",
     "multiformats": "^13.1.0",
