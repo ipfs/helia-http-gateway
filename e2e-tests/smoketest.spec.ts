@@ -19,7 +19,7 @@ const pages = [
   'probelab.io',
   'protocol.ai',
   'research.protocol.ai',
-  'singularity.storage',
+  // 'singularity.storage', // broken as of 09-07-2024
   'specs.ipfs.tech',
   // 'strn.network', // redirects to saturn.tech
   'saturn.tech',
