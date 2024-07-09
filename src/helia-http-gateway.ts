@@ -1,9 +1,11 @@
+import { raceSignal } from 'race-signal'
 import { USE_SUBDOMAINS } from './constants.js'
 import { dnsLinkLabelEncoder, isInlinedDnsLink } from './dns-link-labels.js'
 import { getFullUrlFromFastifyRequest, getRequestAwareSignal } from './helia-server.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
 import type { VerifiedFetch } from '@helia/verified-fetch'
 import type { ComponentLogger } from '@libp2p/interface'
+import type { AbortOptions } from '@multiformats/multiaddr'
 import type { FastifyReply, FastifyRequest, RouteOptions } from 'fastify'
 import type { Helia } from 'helia'
 
@@ -95,24 +97,26 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
       session: USE_SESSIONS
     })
 
-    await convertVerifiedFetchResponseToFastifyReply(resp, reply)
+    await convertVerifiedFetchResponseToFastifyReply(url, resp, reply, {
+      signal
+    })
   }
 
-  async function convertVerifiedFetchResponseToFastifyReply (verifiedFetchResponse: Response, reply: FastifyReply): Promise<void> {
+  async function convertVerifiedFetchResponseToFastifyReply (url: string, verifiedFetchResponse: Response, reply: FastifyReply, options: AbortOptions): Promise<void> {
     if (!verifiedFetchResponse.ok) {
-      log('verified-fetch response not ok: ', verifiedFetchResponse.status)
+      log('verified-fetch response for %s not ok: ', url, verifiedFetchResponse.status)
       await reply.code(verifiedFetchResponse.status).send(verifiedFetchResponse.statusText)
       return
     }
     const contentType = verifiedFetchResponse.headers.get('content-type')
     if (contentType == null) {
-      log('verified-fetch response has no content-type')
+      log('verified-fetch response for %s has no content-type', url)
       await reply.code(200).send(verifiedFetchResponse.body)
       return
     }
     if (verifiedFetchResponse.body == null) {
       // this should never happen
-      log('verified-fetch response has no body')
+      log('verified-fetch response for %s has no body', url)
       await reply.code(501).send('empty')
       return
     }
@@ -127,15 +131,17 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
     try {
       let done = false
       while (!done) {
-        const { done: _done, value } = await reader.read()
+        const { done: _done, value } = await raceSignal(reader.read(), options.signal)
         if (value != null) {
           reply.raw.write(Buffer.from(value))
         }
         done = _done
       }
     } catch (err) {
-      log.error('error reading response:', err)
+      log.error('error reading response for %s', url, err)
+      await reader.cancel(err)
     } finally {
+      log.error('reading response for %s ended', url)
       reply.raw.end()
     }
   }
