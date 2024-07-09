@@ -1,5 +1,5 @@
 import { raceSignal } from 'race-signal'
-import { USE_SUBDOMAINS } from './constants.js'
+import { USE_SUBDOMAINS, USE_SESSIONS } from './constants.js'
 import { dnsLinkLabelEncoder, isInlinedDnsLink } from './dns-link-labels.js'
 import { getFullUrlFromFastifyRequest, getRequestAwareSignal } from './helia-server.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
