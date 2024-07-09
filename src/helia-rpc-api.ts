@@ -47,8 +47,9 @@ export function rpcApi (opts: HeliaRPCAPIOptions): RouteOptions[] {
 
       log('helia version info:', heliaVersionInfo)
       await reply.code(200).header('Content-Type', 'application/json; charset=utf-8').send(heliaVersionInfo)
-    } catch (error) {
-      await reply.code(500).send(error)
+    } catch (err) {
+      log.error('could not send version', err)
+      await reply.code(500).send(err)
     }
   }
 
@@ -73,8 +74,9 @@ export function rpcApi (opts: HeliaRPCAPIOptions): RouteOptions[] {
       // inline CID is bafkqaddimvwgy3zao5xxe3debi
       await opts.fetch('ipfs://bafkqaddimvwgy3zao5xxe3debi', { signal, redirect: 'follow' })
       await reply.code(200).send('OK')
-    } catch (error) {
-      await reply.code(500).send(error)
+    } catch (err) {
+      log.error('could not run healthcheck', err)
+      await reply.code(500).send(err)
     }
   }
 

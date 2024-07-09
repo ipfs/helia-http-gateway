@@ -60,8 +60,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:e2e": "playwright test",
     "test:http-e2e": "cross-env USE_BITSWAP=false USE_LIBP2P=false playwright test",
-    "test:e2e-flame": "concurrently -k -s all -n \"gateway,playwright\" -c \"magenta,blue\" \"npm run start:dev-flame\" \"wait-on 'tcp:$PORT' && npm run test:e2e\"",
-    "test:e2e-doctor": "concurrently -k -s all -n \"gateway,playwright\" -c \"magenta,blue\" \"npm run start:dev-doctor\" \"wait-on 'tcp:$PORT' && npm run test:e2e\"",
+    "test:e2e-flame": "concurrently -k -s all -n \"gateway,playwright\" -c \"magenta,blue\" \"npm run start:dev-flame\" \"wait-on 'tcp:$HTTP_PORT' && npm run test:e2e\"",
+    "test:e2e-doctor": "concurrently -k -s all -n \"gateway,playwright\" -c \"magenta,blue\" \"npm run start:dev-doctor\" \"wait-on 'tcp:$HTTP_PORT' && npm run test:e2e\"",
     "test:gwc-kubo": "node ./scripts/kubo-init.js",
     "test:gwc-helia": "npm run build && node -r dotenv/config --trace-warnings dist/src/index.js dotenv_config_path=./.env-gwc",
     "test:gwc-setup": "concurrently -k -s all -n \"kubo,helia\" -c \"magenta,blue\" \"npm run test:gwc-kubo\" \"wait-on 'tcp:8080' && npm run test:gwc-helia\"",
@@ -83,7 +83,7 @@
     "@helia/interface": "^4.1.0",
     "@helia/routers": "^1.0.2",
     "@helia/utils": "^0.1.0",
-    "@helia/verified-fetch": "^1.3.7",
+    "@helia/verified-fetch": "^1.3.12",
     "@libp2p/bootstrap": "^10.0.17",
     "@libp2p/circuit-relay-v2": "^1.0.17",
     "@libp2p/identify": "^1.0.16",
@@ -108,7 +108,8 @@
     "libp2p": "^1.3.1",
     "multiformats": "^13.1.0",
     "pino-pretty": "^11.0.0",
-    "private-ip": "^3.0.2"
+    "private-ip": "^3.0.2",
+    "race-signal": "^1.0.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.43.0",

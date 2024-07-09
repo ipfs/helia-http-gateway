@@ -68,7 +68,6 @@
  * | `ECHO_HEADERS`              | A debug flag to indicate whether you want to output request and response headers                                                               | `false`                                                                                                                 |
  * | `USE_DELEGATED_ROUTING`     | Whether to use the delegated routing v1 API                                                                                                    | `true`                                                                                                                  |
  * | `DELEGATED_ROUTING_V1_HOST` | Hostname to use for delegated routing v1                                                                                                       | `https://delegated-ipfs.dev`                                                                                            |
- * | `RECOVERABLE_ERRORS`        | A comma delimited list of errors to recover from. These errors are checked in `uncaughtException` and `unhandledRejection` callbacks           | `all`                                                                                            |
  *
  * <!--
  * TODO: currently broken when used in docker, but they work when running locally (you can cache datastore and blockstore locally to speed things up if you want)
@@ -161,7 +160,7 @@ import cors from '@fastify/cors'
 import { createVerifiedFetch } from '@helia/verified-fetch'
 import fastify, { type FastifyInstance, type RouteOptions } from 'fastify'
 import metricsPlugin from 'fastify-metrics'
-import { HOST, HTTP_PORT, RPC_PORT, METRICS, ECHO_HEADERS, FASTIFY_DEBUG, RECOVERABLE_ERRORS, ALLOW_UNHANDLED_ERROR_RECOVERY } from './constants.js'
+import { HOST, HTTP_PORT, RPC_PORT, METRICS, ECHO_HEADERS, FASTIFY_DEBUG } from './constants.js'
 import { contentTypeParser } from './content-type-parser.js'
 import { getCustomHelia } from './get-custom-helia.js'
 import { httpGateway } from './helia-http-gateway.js'
@@ -227,18 +226,6 @@ async function closeGracefully (signal: number | string): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   process.once(signal, closeGracefully)
 })
-
-const uncaughtHandler = (error: any): void => {
-  log.error('Uncaught Exception:', error)
-  if (ALLOW_UNHANDLED_ERROR_RECOVERY && (RECOVERABLE_ERRORS === 'all' || RECOVERABLE_ERRORS.includes(error?.code) || RECOVERABLE_ERRORS.includes(error?.name))) {
-    log.trace('Ignoring error')
-    return
-  }
-  void closeGracefully('SIGTERM')
-}
-
-process.on('uncaughtException', uncaughtHandler)
-process.on('unhandledRejection', uncaughtHandler)
 
 interface ServerOptions {
   metrics: boolean
