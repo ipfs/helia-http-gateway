@@ -64,7 +64,7 @@ function configureBlockBrokers (): HeliaInit['blockBrokers'] {
 function configureRouters (): HeliaInit['routers'] {
   const routers: HeliaInit['routers'] = []
 
-  if (TRUSTLESS_GATEWAYS) {
+  if (TRUSTLESS_GATEWAYS != null) {
     routers.push(httpGatewayRouting({
       gateways: TRUSTLESS_GATEWAYS
     }))
