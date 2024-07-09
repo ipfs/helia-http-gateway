@@ -1,5 +1,5 @@
 import { raceSignal } from 'race-signal'
-import { USE_SUBDOMAINS } from './constants.js'
+import { USE_SUBDOMAINS, USE_SESSIONS } from './constants.js'
 import { dnsLinkLabelEncoder, isInlinedDnsLink } from './dns-link-labels.js'
 import { getFullUrlFromFastifyRequest, getRequestAwareSignal } from './helia-server.js'
 import { getIpnsAddressDetails } from './ipns-address-utils.js'
@@ -89,7 +89,11 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
 
     // if subdomains are disabled, have @helia/verified-fetch follow redirects
     // internally, otherwise let the client making the request do it
-    const resp = await opts.fetch(url, { signal, redirect: USE_SUBDOMAINS ? 'manual' : 'follow' })
+    const resp = await opts.fetch(url, {
+      signal,
+      redirect: USE_SUBDOMAINS ? 'manual' : 'follow',
+      session: USE_SESSIONS
+    })
 
     await convertVerifiedFetchResponseToFastifyReply(url, resp, reply, {
       signal
