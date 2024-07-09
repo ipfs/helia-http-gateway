@@ -165,23 +165,19 @@ import { contentTypeParser } from './content-type-parser.js'
 import { getCustomHelia } from './get-custom-helia.js'
 import { httpGateway } from './helia-http-gateway.js'
 import { rpcApi } from './helia-rpc-api.js'
-import { logger } from './logger.js'
-
-const log = logger.forComponent('index')
 
 const helia = await getCustomHelia()
 const fetch = await createVerifiedFetch(helia, { contentTypeParser })
+const log = helia.logger.forComponent('index')
 
 const [rpcApiServer, httpGatewayServer] = await Promise.all([
   createServer('rpc-api', rpcApi({
-    logger,
     helia,
     fetch
   }), {
     metrics: false
   }),
   createServer('http-gateway', httpGateway({
-    logger,
     helia,
     fetch
   }), {
