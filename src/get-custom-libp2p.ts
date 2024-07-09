@@ -21,8 +21,8 @@ import type { Multiaddr } from '@multiformats/multiaddr'
 import type { HeliaInit } from 'helia'
 
 interface HeliaGatewayLibp2pServices extends ServiceMap {
-  dht: KadDHT
-  delegatedRouting: unknown
+  dht?: KadDHT
+  delegatedRouting?: unknown
   identify: Identify
 }
 
@@ -34,7 +34,7 @@ const IP4 = 4
 const IP6 = 41
 
 export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions): Promise<Libp2p<HeliaGatewayLibp2pServices>> {
-  const libp2pServices: ServiceFactoryMap = {
+  const libp2pServices: ServiceFactoryMap<HeliaGatewayLibp2pServices> = {
     identify: identify()
   }
 
