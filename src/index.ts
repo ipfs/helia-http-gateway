@@ -265,7 +265,8 @@ async function createServer (name: string, routes: RouteOptions[], options: Serv
     ],
     methods: ['GET', 'HEAD', 'OPTIONS'],
     strictPreflight: false,
-    preflightContinue: true
+    preflightContinue: true,
+    preflight: true
   })
 
   // enable compression
