@@ -80,27 +80,23 @@ export function rpcApi (opts: HeliaRPCAPIOptions): RouteOptions[] {
     }
   }
 
-  return [
-    {
-      url: '/api/v0/version',
-      method: ['POST', 'GET'],
-      handler: async (request, reply): Promise<void> => heliaVersion(request, reply)
-    }, {
-      url: '/api/v0/repo/gc',
-      method: ['POST', 'GET'],
-      handler: async (request, reply): Promise<void> => gc(request, reply)
-    },
-    {
-      url: '/api/v0/http-gateway-healthcheck',
-      method: 'GET',
-      handler: async (request, reply): Promise<void> => healthCheck(request, reply)
-    },
-    {
-      url: '/*',
-      method: 'GET',
-      handler: async (request, reply): Promise<void> => {
-        await reply.code(400).send('API + Method not supported')
-      }
+  return [{
+    url: '/api/v0/version',
+    method: ['POST', 'GET'],
+    handler: async (request, reply): Promise<void> => heliaVersion(request, reply)
+  }, {
+    url: '/api/v0/repo/gc',
+    method: ['POST', 'GET'],
+    handler: async (request, reply): Promise<void> => gc(request, reply)
+  }, {
+    url: '/api/v0/http-gateway-healthcheck',
+    method: 'GET',
+    handler: async (request, reply): Promise<void> => healthCheck(request, reply)
+  }, {
+    url: '/*',
+    method: 'GET',
+    handler: async (request, reply): Promise<void> => {
+      await reply.code(400).send('API + Method not supported')
     }
-  ]
+  }]
 }

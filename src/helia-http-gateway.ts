@@ -31,6 +31,7 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
     const { ns: namespace, '*': relativePath, address } = params as EntryParams
 
     log('handling entry: ', { address, namespace, relativePath })
+
     if (!USE_SUBDOMAINS) {
       log('subdomains are disabled, fetching without subdomain')
       return fetch(request, reply)
@@ -39,9 +40,11 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
     }
 
     const { peerId, cid } = getIpnsAddressDetails(address)
+
     if (peerId != null) {
       return fetch(request, reply)
     }
+
     const cidv1Address = cid?.toString()
 
     const query = request.query as Record<string, string>
@@ -77,7 +80,8 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
   }
 
   /**
-   * Fetches a content for a subdomain, which basically queries delegated routing API and then fetches the path from helia.
+   * Fetches a content for a subdomain, which basically queries delegated
+   * routing API and then fetches the path from helia.
    */
   async function fetch (request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const url = getFullUrlFromFastifyRequest(request, log)
@@ -106,12 +110,18 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
       await reply.code(verifiedFetchResponse.status).send(verifiedFetchResponse.statusText)
       return
     }
+
     const contentType = verifiedFetchResponse.headers.get('content-type')
+
     if (contentType == null) {
       log('verified-fetch response for %s has no content-type', url)
       await reply.code(200).send(verifiedFetchResponse.body)
       return
     }
+
+    console.info('content type', contentType)
+    console.info('reply', verifiedFetchResponse)
+
     if (verifiedFetchResponse.body == null) {
       // this should never happen
       log('verified-fetch response for %s has no body', url)
@@ -120,20 +130,26 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
     }
 
     const headers: Record<string, string> = {}
+
     for (const [headerName, headerValue] of verifiedFetchResponse.headers.entries()) {
       headers[headerName] = headerValue
     }
-    // Fastify really does not like streams despite what the documentation and github issues say.
+
+    // Fastify really does not like streams despite what the documentation and
+    // github issues say
     const reader = verifiedFetchResponse.body.getReader()
     reply.raw.writeHead(verifiedFetchResponse.status, headers)
+
     try {
       let done = false
+      let value = undefined
+
       while (!done) {
-        const { done: _done, value } = await raceSignal(reader.read(), options.signal)
+        ({ done, value } = await raceSignal(reader.read(), options.signal))
+
         if (value != null) {
           reply.raw.write(Buffer.from(value))
         }
-        done = _done
       }
     } catch (err) {
       log.error('error reading response for %s', url, err)
@@ -144,38 +160,33 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
     }
   }
 
-  return [
-    {
-      // without this non-wildcard postfixed path, the '/*' route will match first.
-      url: '/:ns(ipfs|ipns)/:address', // ipns/dnsLink or ipfs/cid
-      method: 'GET',
-      handler: async (request, reply): Promise<void> => handleEntry(request, reply)
-    },
-    {
-      url: '/:ns(ipfs|ipns)/:address/*', // ipns/dnsLink/relativePath or ipfs/cid/relativePath
-      method: 'GET',
-      handler: async (request, reply): Promise<void> => handleEntry(request, reply)
-    },
-    {
-      url: '/*',
-      method: 'GET',
-      handler: async (request, reply): Promise<void> => {
-        try {
-          await fetch(request, reply)
-        } catch {
-          await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
-        }
-      }
-    },
-    {
-      url: '/',
-      method: 'GET',
-      handler: async (request, reply): Promise<void> => {
-        if (USE_SUBDOMAINS && request.hostname.split('.').length > 1) {
-          return fetch(request, reply)
-        }
+  return [{
+    // without this non-wildcard postfixed path, the '/*' route will match first.
+    url: '/:ns(ipfs|ipns)/:address', // ipns/dnsLink or ipfs/cid
+    method: 'GET',
+    handler: async (request, reply): Promise<void> => handleEntry(request, reply)
+  }, {
+    url: '/:ns(ipfs|ipns)/:address/*', // ipns/dnsLink/relativePath or ipfs/cid/relativePath
+    method: 'GET',
+    handler: async (request, reply): Promise<void> => handleEntry(request, reply)
+  }, {
+    url: '/*',
+    method: 'GET',
+    handler: async (request, reply): Promise<void> => {
+      try {
+        await fetch(request, reply)
+      } catch {
         await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
       }
     }
-  ]
+  }, {
+    url: '/',
+    method: 'GET',
+    handler: async (request, reply): Promise<void> => {
+      if (USE_SUBDOMAINS && request.hostname.split('.').length > 1) {
+        return fetch(request, reply)
+      }
+      await reply.code(200).send('try /ipfs/<cid> or /ipns/<name>')
+    }
+  }]
 }

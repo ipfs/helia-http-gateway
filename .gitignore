@@ -7,35 +7,10 @@ node_modules
 package-lock.json
 yarn.lock
 .vscode
-
-# env config files
-.env*
-*.nix
-.tool-versions
-.direnv
-
-# helia-http-gateway specific files
-/test-results/
-/playwright-report/
-/playwright/.cache/
-screenshots
-.envrc
-scripts/tmp/fixtures
-scripts/tmp/kubo-path.txt
-test/fixtures/e2e
-
-# helia-http-gateway debugging files
-debugging/test-gateways.log
-permutation-logs
-*.csv
-*.log
-blockstore
 datastore
-*.heapsnapshot
-
-# grafana/prometheus files
-config/grafana/alerting
-config/grafana/grafana.db
-.DS_Store
+debugging/*.log
+scripts/tmp
+test
+test-results
+*-report.json
 *.log
-.env*
