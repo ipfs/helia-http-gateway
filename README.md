@@ -188,7 +188,7 @@ See [Metrics config](./config/README.md#metrics) for more information on how to 
 # Install
 
 ```console
-$ npm i helia-http-gateway
+$ npm i @helia/http-gateway
 ```
 
 # License
