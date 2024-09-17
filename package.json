@@ -1,5 +1,5 @@
 {
-  "name": "helia-http-gateway",
+  "name": "@helia/http-gateway",
   "version": "0.0.1",
   "description": "HTTP IPFS Gateway implemented using Helia",
   "license": "Apache-2.0 OR MIT",
