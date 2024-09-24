@@ -85,7 +85,7 @@
     "@helia/verified-fetch": "^1.3.12",
     "@libp2p/bootstrap": "^10.0.17",
     "@libp2p/circuit-relay-v2": "^1.0.17",
-    "@libp2p/identify": "^2.1.1",
+    "@libp2p/identify": "^3.0.2",
     "@libp2p/interface": "^1.1.5",
     "@libp2p/kad-dht": "^12.0.10",
     "@libp2p/mplex": "^10.0.17",
