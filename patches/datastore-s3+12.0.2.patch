@@ -1,0 +1,13 @@
+diff --git a/node_modules/datastore-s3/dist/src/index.js b/node_modules/datastore-s3/dist/src/index.js
+index 3dc550c..88f43d0 100644
+--- a/node_modules/datastore-s3/dist/src/index.js
++++ b/node_modules/datastore-s3/dist/src/index.js
+@@ -113,7 +113,7 @@ export class S3Datastore extends BaseDatastore {
+             return await toBuffer(data.Body);
+         }
+         catch (err) {
+-            if (err.statusCode === 404) {
++            if (err.statusCode === 404 || err.$metadata.httpStatusCode === 404 || String(err).includes('NoSuchKey')) {
+                 throw new NotFoundError(String(err));
+             }
+             throw new GetFailedError(String(err));

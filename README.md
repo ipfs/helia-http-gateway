@@ -62,7 +62,7 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:
 
 ## Run without Docker
 
-\### Build
+### Build
 
 ```sh
 $ npm run build
@@ -91,14 +91,19 @@ $ npm start
 | `ECHO_HEADERS`              | A debug flag to indicate whether you want to output request and response headers                                                               | `false`                                                                                                                 |
 | `USE_DELEGATED_ROUTING`     | Whether to use the delegated routing v1 API                                                                                                    | `true`                                                                                                                  |
 | `DELEGATED_ROUTING_V1_HOST` | Hostname to use for delegated routing v1                                                                                                       | `https://delegated-ipfs.dev`                                                                                            |
-| `USE_DHT_ROUTING`           | Whether to use @libp2p/kad-dht for routing when libp2p is enabled                                                                              | `true`                                                                                                                  |
-| `USE_SESSIONS`              | If true, use a blockstore session per IPFS/IPNS path                                                                                           | `true`                                                                                                                  |
 
 <!--
 TODO: currently broken when used in docker, but they work when running locally (you can cache datastore and blockstore locally to speed things up if you want)
 | `FILE_DATASTORE_PATH` | Path to use with a datastore-level passed to Helia as the datastore | `null`; memory datastore is used by default. |
 | `FILE_BLOCKSTORE_PATH` | Path to use with a blockstore-fs passed to Helia as the blockstore | `null`; memory blockstore is used by default. |
 -->
+
+S3 datastore and blockstore are supported.
+\| `S3_BUCKET` | Bucket name to use for S3 datastore and blockstore | `null` |
+\| `S3_ENDPOINT` | S3 endpoint to use for S3 datastore and blockstore if using AWS compatible storage | `null` |
+\| `S3_ACCESS_KEY_ID` | S3 access key id to use for S3 datastore and blockstore | `null` |
+\| `S3_SECRET_ACCESS_KEY` | S3 secret access key to use for S3 datastore and blockstore | `null` |
+\| `AWS_REGION` | AWS region to use for S3 datastore and blockstore if using AWS | `us-east-1` |
 
 See the source of truth for all `process.env.<name>` environment variables at [src/constants.ts](src/constants.ts).
 
@@ -178,12 +183,6 @@ $ npm run test:e2e-flame # Run the dev server with clinicjs flame, execute e2e t
 
 Running with `METRICS=true` will enable collecting Fastify/libp2p metrics and
 will expose a prometheus collection endpoint at <http://localhost:8080/metrics>
-
-js-libp2p metrics are collected by default, but can be disabled by setting `USE_LIBP2P_METRICS=false`. Find out more details at https://github.com/libp2p/js-libp2p/tree/main/packages/metrics-prometheus
-
-### Viewing metrics
-
-See [Metrics config](./config/README.md#metrics) for more information on how to view the generated metrics.
 
 # Install
 
