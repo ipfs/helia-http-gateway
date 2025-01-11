@@ -56,13 +56,13 @@ export const FILE_DATASTORE_PATH = process.env.FILE_DATASTORE_PATH ?? undefined
  */
 export const FILE_BLOCKSTORE_PATH = process.env.FILE_BLOCKSTORE_PATH ?? undefined
 
-export const S3_BUCKET = process.env.S3_DATASTORE_BUCKET ?? undefined
+export const S3_BUCKET = process.env.S3_BUCKET ?? undefined
 
-export const S3_ENDPOINT = process.env.S3_DATASTORE_ENDPOINT ?? undefined
+export const S3_ENDPOINT = process.env.S3_ENDPOINT ?? undefined
 
-export const S3_ACCESS_KEY_ID = process.env.S3_DATASTORE_ACCESS_KEY_ID ?? ''
+export const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID ?? ''
 
-export const S3_SECRET_ACCESS_KEY = process.env.S3_DATASTORE_SECRET_ACCESS_KEY ?? ''
+export const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY ?? ''
 
 export const AWS_REGION = process.env.AWS_REGION ?? 'us-east-1'
 
