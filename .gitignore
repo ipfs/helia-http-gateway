@@ -14,3 +14,4 @@ test
 test-results
 *-report.json
 *.log
+playwright-report
