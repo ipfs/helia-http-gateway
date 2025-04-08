@@ -71,7 +71,7 @@ export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions)
       webRTCDirect(),
       webSockets()
     ],
-    connectionEncryption: [
+    connectionEncrypters: [
       noise(),
       tls()
     ],
