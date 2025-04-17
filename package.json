@@ -87,7 +87,7 @@
     "@libp2p/circuit-relay-v2": "^3.2.8",
     "@libp2p/identify": "^3.0.27",
     "@libp2p/interface": "^2.7.0",
-    "@libp2p/kad-dht": "^14.2.15",
+    "@libp2p/kad-dht": "^15.0.1",
     "@libp2p/mplex": "^11.0.32",
     "@libp2p/peer-id": "^5.1.0",
     "@libp2p/prometheus-metrics": "^4.3.15",
