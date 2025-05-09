@@ -111,7 +111,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.43.0",
-    "@types/node": "^22.14.0",
+    "@types/node": "^22.15.17",
     "aegir": "^45.1.4",
     "clinic": "^13.0.0",
     "concurrently": "^9.1.2",
