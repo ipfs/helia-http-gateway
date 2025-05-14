@@ -82,7 +82,7 @@
     "@helia/http": "^2.0.5",
     "@helia/interface": "^5.2.1",
     "@helia/routers": "^3.0.1",
-    "@helia/verified-fetch": "^2.6.4",
+    "@helia/verified-fetch": "^2.6.17",
     "@libp2p/bootstrap": "^11.0.32",
     "@libp2p/circuit-relay-v2": "^3.2.8",
     "@libp2p/identify": "^3.0.27",
