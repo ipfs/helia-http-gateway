@@ -119,9 +119,6 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
       return
     }
 
-    console.info('content type', contentType)
-    console.info('reply', verifiedFetchResponse)
-
     if (verifiedFetchResponse.body == null) {
       // this should never happen
       log('verified-fetch response for %s has no body', url)
@@ -142,7 +139,7 @@ export function httpGateway (opts: HeliaHTTPGatewayOptions): RouteOptions[] {
 
     try {
       let done = false
-      let value = undefined
+      let value
 
       while (!done) {
         ({ done, value } = await raceSignal(reader.read(), options.signal))

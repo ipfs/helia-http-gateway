@@ -15,3 +15,5 @@ test-results
 *-report.json
 *.log
 playwright-report
+.tmp-compiled-docs
+tsconfig-doc-check.aegir.json

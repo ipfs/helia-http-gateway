@@ -1,9 +1,11 @@
 # helia-http-gateway
 
+# @helia/http-gateway
+
 [![ipfs.tech](https://img.shields.io/badge/project-IPFS-blue.svg?style=flat-square)](https://ipfs.tech)
 [![Discuss](https://img.shields.io/discourse/https/discuss.ipfs.tech/posts.svg?style=flat-square)](https://discuss.ipfs.tech)
 [![codecov](https://img.shields.io/codecov/c/github/ipfs/helia-http-gateway.svg?style=flat-square)](https://codecov.io/gh/ipfs/helia-http-gateway)
-[![CI](https://img.shields.io/github/actions/workflow/status/ipfs/helia-http-gateway/gateway-conformance.yml?branch=main\&style=flat-square)](https://github.com/ipfs/helia-http-gateway/actions/workflows/gateway-conformance.yml?query=branch%3Amain)
+[![CI](https://img.shields.io/github/actions/workflow/status/ipfs/helia-http-gateway/js-test-and-release.yml?branch=main\&style=flat-square)](https://github.com/ipfs/helia-http-gateway/actions/workflows/js-test-and-release.yml?query=branch%3Amain)
 
 > HTTP IPFS Gateway implemented using Helia
 
@@ -62,7 +64,7 @@ $ docker run -it -p 8080:8080 -e DEBUG="helia-http-gateway*" helia-http-gateway:
 
 ## Run without Docker
 
-\### Build
+\### Build
 
 ```sh
 $ npm run build
@@ -179,7 +181,7 @@ $ npm run test:e2e-flame # Run the dev server with clinicjs flame, execute e2e t
 Running with `METRICS=true` will enable collecting Fastify/libp2p metrics and
 will expose a prometheus collection endpoint at <http://localhost:8080/metrics>
 
-js-libp2p metrics are collected by default, but can be disabled by setting `USE_LIBP2P_METRICS=false`. Find out more details at https://github.com/libp2p/js-libp2p/tree/main/packages/metrics-prometheus
+js-libp2p metrics are collected by default, but can be disabled by setting `USE_LIBP2P_METRICS=false`. Find out more details at <https://github.com/libp2p/js-libp2p/tree/main/packages/metrics-prometheus>
 
 ### Viewing metrics
 
@@ -191,12 +193,16 @@ See [Metrics config](./config/README.md#metrics) for more information on how to 
 $ npm i @helia/http-gateway
 ```
 
+# API Docs
+
+- <https://ipfs.github.io/helia-http-gateway>
+
 # License
 
 Licensed under either of
 
-- Apache 2.0, ([LICENSE-APACHE](LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
-- MIT ([LICENSE-MIT](LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
+- Apache 2.0, ([LICENSE-APACHE](https://github.com/ipfs/helia-http-gateway/LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT ([LICENSE-MIT](https://github.com/ipfs/helia-http-gateway/LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
 
 # Contribute
 

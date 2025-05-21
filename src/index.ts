@@ -158,13 +158,14 @@
 import compress from '@fastify/compress'
 import cors from '@fastify/cors'
 import { createVerifiedFetch } from '@helia/verified-fetch'
-import fastify, { type FastifyInstance, type RouteOptions } from 'fastify'
+import fastify from 'fastify'
 import metricsPlugin from 'fastify-metrics'
 import { HOST, HTTP_PORT, RPC_PORT, METRICS, ECHO_HEADERS, FASTIFY_DEBUG } from './constants.js'
 import { contentTypeParser } from './content-type-parser.js'
 import { getCustomHelia } from './get-custom-helia.js'
 import { httpGateway } from './helia-http-gateway.js'
 import { rpcApi } from './helia-rpc-api.js'
+import type { FastifyInstance, RouteOptions } from 'fastify'
 
 const helia = await getCustomHelia()
 const fetch = await createVerifiedFetch(helia, { contentTypeParser })
@@ -223,7 +224,6 @@ async function closeGracefully (signal: number | string): Promise<void> {
 }
 
 ['SIGHUP', 'SIGINT', 'SIGTERM', 'beforeExit'].forEach((signal: string) => {
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   process.once(signal, closeGracefully)
 })
 
