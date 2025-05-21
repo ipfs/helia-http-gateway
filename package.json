@@ -35,13 +35,6 @@
       "import": "./dist/src/index.js"
     }
   },
-  "eslintConfig": {
-    "extends": "ipfs",
-    "parserOptions": {
-      "project": true,
-      "sourceType": "module"
-    }
-  },
   "scripts": {
     "clean": "aegir clean dist playwright-report test",
     "lint": "aegir lint",
@@ -90,6 +83,7 @@
     "@libp2p/kad-dht": "^15.1.0",
     "@libp2p/mplex": "^11.0.32",
     "@libp2p/peer-id": "^5.1.0",
+    "@libp2p/ping": "^2.0.31",
     "@libp2p/prometheus-metrics": "^4.3.15",
     "@libp2p/tcp": "^10.1.8",
     "@libp2p/tls": "^2.1.1",
@@ -111,8 +105,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.43.0",
-    "@types/node": "^22.14.0",
-    "aegir": "^45.1.4",
+    "aegir": "^47.0.10",
     "clinic": "^13.0.0",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",

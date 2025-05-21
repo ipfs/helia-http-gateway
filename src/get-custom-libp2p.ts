@@ -3,8 +3,8 @@ import { yamux } from '@chainsafe/libp2p-yamux'
 import { createDelegatedRoutingV1HttpApiClient } from '@helia/delegated-routing-v1-http-api-client'
 import { bootstrap } from '@libp2p/bootstrap'
 import { circuitRelayTransport } from '@libp2p/circuit-relay-v2'
-import { identify, type Identify } from '@libp2p/identify'
-import { type KadDHT, kadDHT, removePrivateAddressesMapper } from '@libp2p/kad-dht'
+import { identify } from '@libp2p/identify'
+import { kadDHT, removePrivateAddressesMapper } from '@libp2p/kad-dht'
 import { mplex } from '@libp2p/mplex'
 import { prometheusMetrics } from '@libp2p/prometheus-metrics'
 import { tcp } from '@libp2p/tcp'
@@ -13,17 +13,23 @@ import { webRTC, webRTCDirect } from '@libp2p/webrtc'
 import { webSockets } from '@libp2p/websockets'
 import { ipnsSelector } from 'ipns/selector'
 import { ipnsValidator } from 'ipns/validator'
-import { createLibp2p as create, type Libp2pOptions, type ServiceFactoryMap } from 'libp2p'
+import { createLibp2p as create } from 'libp2p'
 import isPrivate from 'private-ip'
+import { ping } from '@libp2p/ping'
 import { DELEGATED_ROUTING_V1_HOST, METRICS, USE_DELEGATED_ROUTING, USE_DHT_ROUTING } from './constants.js'
+import type { Identify } from '@libp2p/identify'
 import type { Libp2p, ServiceMap } from '@libp2p/interface'
+import type { KadDHT } from '@libp2p/kad-dht'
 import type { Multiaddr } from '@multiformats/multiaddr'
 import type { HeliaInit } from 'helia'
+import type { Libp2pOptions, ServiceFactoryMap } from 'libp2p'
+import type { Ping } from '@libp2p/ping'
 
 interface HeliaGatewayLibp2pServices extends ServiceMap {
   dht?: KadDHT
   delegatedRouting?: unknown
   identify: Identify
+  ping: Ping
 }
 
 interface HeliaGatewayLibp2pOptions extends Partial<Pick<HeliaInit, 'datastore'>> {
@@ -35,7 +41,8 @@ const IP6 = 41
 
 export async function getCustomLibp2p ({ datastore }: HeliaGatewayLibp2pOptions): Promise<Libp2p<HeliaGatewayLibp2pServices>> {
   const libp2pServices: ServiceFactoryMap<HeliaGatewayLibp2pServices> = {
-    identify: identify()
+    identify: identify(),
+    ping: ping()
   }
 
   if (USE_DELEGATED_ROUTING) {
