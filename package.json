@@ -93,7 +93,7 @@
     "@libp2p/prometheus-metrics": "^4.3.15",
     "@libp2p/tcp": "^10.1.8",
     "@libp2p/tls": "^2.1.1",
-    "@libp2p/webrtc": "^5.2.9",
+    "@libp2p/webrtc": "^5.2.14",
     "@libp2p/websockets": "^9.2.8",
     "@multiformats/multiaddr": "^12.2.1",
     "@sgtpooki/file-type": "^1.0.1",
