@@ -105,7 +105,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.43.0",
-    "aegir": "^47.0.10",
+    "aegir": "^47.0.16",
     "clinic": "^13.0.0",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
