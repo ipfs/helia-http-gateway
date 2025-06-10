@@ -68,7 +68,7 @@
   "dependencies": {
     "@chainsafe/libp2p-noise": "^16.1.0",
     "@chainsafe/libp2p-yamux": "^7.0.1",
-    "@fastify/compress": "^8.0.1",
+    "@fastify/compress": "^8.0.3",
     "@fastify/cors": "^11.0.1",
     "@helia/block-brokers": "^4.1.0",
     "@helia/delegated-routing-v1-http-api-client": "^4.2.2",
