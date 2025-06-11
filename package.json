@@ -104,7 +104,7 @@
     "race-signal": "^1.0.2"
   },
   "devDependencies": {
-    "@playwright/test": "^1.43.0",
+    "@playwright/test": "^1.53.0",
     "aegir": "^47.0.10",
     "clinic": "^13.0.0",
     "concurrently": "^9.1.2",
