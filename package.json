@@ -112,7 +112,7 @@
     "debug": "^4.3.4",
     "dotenv": "^16.4.5",
     "execa": "^9.3.0",
-    "glob": "^11.0.0",
+    "glob": "^11.0.3",
     "kubo": "^0.34.1",
     "patch-package": "^8.0.0",
     "typescript": "5.x",
