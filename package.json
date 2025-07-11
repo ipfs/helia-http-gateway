@@ -96,7 +96,7 @@
     "fastify": "^5.2.2",
     "fastify-metrics": "^12.1.0",
     "helia": "^5.3.0",
-    "ipns": "^10.0.2",
+    "ipns": "^10.1.2",
     "libp2p": "^2.8.2",
     "multiformats": "^13.1.0",
     "pino-pretty": "^13.0.0",
