@@ -116,6 +116,6 @@
     "kubo": "^0.34.1",
     "patch-package": "^8.0.0",
     "typescript": "5.x",
-    "wait-on": "^8.0.3"
+    "wait-on": "^8.0.4"
   }
 }
