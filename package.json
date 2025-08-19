@@ -101,7 +101,7 @@
     "multiformats": "^13.1.0",
     "pino-pretty": "^13.0.0",
     "private-ip": "^3.0.2",
-    "race-signal": "^1.0.2"
+    "race-signal": "^2.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.43.0",
